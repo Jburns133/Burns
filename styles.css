@@ -1,0 +1,85 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: #0050c5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: monospace;
+}
+
+.screen {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#screen1 {
+  background-color: #0050c5;
+}
+
+.hidden {
+  display: none;
+}
+
+.key-button {
+  background-color: #ffda2a;
+  border: none;
+  font-size: 1.2em;
+  padding: 1.5rem 3rem;
+  border-radius: 6px;
+  box-shadow: 4px 4px 0 #000;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.key-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 #000;
+}
+
+#screen2 {
+  position: relative;
+  background-color: #000;
+  color: #00ff00;
+  flex-direction: column;
+  overflow: hidden;
+  animation: flicker 0.2s infinite alternate;
+}
+
+.crt {
+  padding: 2rem;
+  border: 4px solid #00ff00;
+  background: #001100;
+  box-shadow: 0 0 20px #00ff00;
+  width: 90%;
+  max-width: 600px;
+  text-align: left;
+  z-index: 1;
+}
+
+.crt::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 255, 0, 0.05),
+    rgba(0, 255, 0, 0.05) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes flicker {
+  0% { opacity: 1; }
+  100% { opacity: 0.97; }
+}
