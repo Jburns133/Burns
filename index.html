@@ -1,290 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Signal Tracker • Clean UI</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Tracking UI</title>
 <style>
-  :root{
-    --bg:#0b0f14;
-    --panel:#0f141b;
-    --accent:#9efcff;
-    --accent-dim:#2b7a7e;
-    --good:#20e27a;
-    --warn:#ff3b3b;
-    --text:#d8e1e8;
-    --muted:#8da3b3;
-    --card:#0c1117;
-    --grid:#14202b;
-    --gold:#d6c068;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
-  h1,h2,h3{margin:0 0 .6rem 0; font-weight:600; letter-spacing:.04em}
-  .app{max-width:1100px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns: 1.1fr .9fr;grid-template-rows:auto 380px;gap:16px}
-  .panel{background:linear-gradient(180deg,#0f141b 0%,#0c1218 100%);border:1px solid #111a22;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);position:relative;overflow:hidden}
-  .panel .hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #121b24;background:#0f151c}
-  .chip{font-size:.75rem;color:var(--accent);border:1px solid #1a2b36;padding:4px 8px;border-radius:999px;background:#0c141a}
-  /* --- LEFT: Scanner --- */
-  .scanner{grid-column:1/2;grid-row:1/3;display:grid;grid-template-rows:auto 1fr}
-  .scanner .body{padding:14px 14px 18px 14px;display:grid;grid-template-columns:1fr;gap:12px}
-  .scanbox{position:relative;aspect-ratio:3/4;border-radius:12px;border:1px solid #15222e;background:
-      radial-gradient(60% 40% at 50% 30%, rgba(158,252,255,.12) 0%, transparent 55%),
-      radial-gradient(40% 50% at 50% 60%, rgba(158,252,255,.08) 0%, transparent 60%),
-      #091117; overflow:hidden}
-  .scanbox::before{ /* grid */
-      content:""; position:absolute; inset:0; background:
-        linear-gradient(#0b1a23 1px, transparent 1px) 0 0/100% 24px,
-        linear-gradient(90deg,#0b1a23 1px, transparent 1px) 0 0/24px 100%;
-      mix-blend-mode:screen; opacity:.6
-  }
-  .sweep{position:absolute; inset:-20% -20% -20% -20%;
-     background:conic-gradient(from 0deg, rgba(32,226,122,.18), rgba(32,226,122,0) 45deg);
-     border-radius:50%; filter:blur(2px); animation:sweep 3s linear infinite}
-  @keyframes sweep{to{transform:rotate(360deg)}}
-  .avatar{position:absolute;inset:0;display:grid;place-items:center}
-  .avatar svg{width:78%;height:auto;opacity:.85;filter:drop-shadow(0 0 6px rgba(158,252,255,.08))}
-  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #15222e;border-radius:10px;background:#0a1218}
-  .pulse-dot{width:10px;height:10px;background:var(--good);border-radius:999px;position:relative}
-  .pulse-dot::after{content:"";position:absolute;inset:-6px; border-radius:50%; border:2px solid var(--good); animation:pulse 1.4s ease-out infinite}
-  @keyframes pulse{0%{opacity:.8;transform:scale(0.6)}100%{opacity:0;transform:scale(2.2)}}
-  .btn{cursor:pointer;border:1px solid #223446;background:#101923;color:var(--text);padding:10px 14px;border-radius:10px;font-weight:600;letter-spacing:.04em}
-  .btn:active{transform:translateY(1px)}
-  .btn.primary{background:linear-gradient(180deg,#172634,#101a24);border-color:#244154;color:#cfe9ff}
-  .hint{color:var(--muted);font-size:.8rem}
-  /* --- RIGHT: Details --- */
-  .details{grid-column:2/3;grid-row:1/2;display:grid;grid-template-rows:auto 1fr}
-  .kv{display:grid;grid-template-columns:auto 1fr;row-gap:10px;column-gap:12px;padding:14px 16px}
-  .kv label{color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-size:.72rem}
-  .kv .val{font-size:1rem;color:#e6f2ff}
-  .ok{color:var(--good)}
-  /* --- BOTTOM: Map --- */
-  .map{grid-column:2/3;grid-row:2/3;display:grid;grid-template-rows:auto 1fr}
-  .map canvas{width:100%;height:100%;display:block}
-  .legend{position:absolute;bottom:10px;left:10px;padding:6px 8px;border-radius:8px;background:#0c1319;border:1px solid #15222e;color:#b7c7d6;font-size:.78rem}
-  .pingLabel{position:absolute;transform:translate(-50%,-50%); color:#ffdbdb;font-size:.8rem;text-shadow:0 0 8px rgba(255,59,59,.55)}
-  /* --- Responsive --- */
-  @media (max-width:900px){
-    .app{grid-template-columns:1fr;grid-template-rows:auto auto 360px}
-    .scanner{grid-row:1/2}
-    .details{grid-row:2/3}
-    .map{grid-row:3/4}
-  }
+body{
+  background:#000;
+  color:#0f0;
+  font-family:monospace;
+  display:flex;
+  justify-content:center;
+  padding:20px;
+}
+.container{
+  display:flex;
+  gap:20px;
+}
+.left,.right{
+  background:#020b0d;
+  border:2px solid #1aff1a;
+  padding:10px;
+}
+.left{
+  width:250px;
+  height:350px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+}
+.scan{
+  width:200px;
+  height:260px;
+  border:1px solid #1aff1a;
+  position:relative;
+  overflow:hidden;
+}
+.scan::before{
+  content:"";
+  position:absolute;
+  width:100%;
+  height:3px;
+  background:rgba(0,255,0,0.7);
+  animation:scan 2s linear infinite;
+}
+@keyframes scan{
+  0%{top:0;}
+  100%{top:100%;}
+}
+/* silhouette lines */
+.scan svg{
+  width:100%;
+  height:100%;
+  opacity:0.5;
+  stroke:#1aff1a;
+  fill:none;
+}
+
+.right{
+  width:300px;
+}
+.right h2{
+  color:red;
+  font-size:20px;
+}
+.kv{margin:8px 0;}
+.kv span{color:#fff;}
+.map{
+  margin-top:20px;
+  width:100%;
+  height:200px;
+  background:#000 url('https://upload.wikimedia.org/wikipedia/commons/9/97/Mercator_projection_SW.jpg') center/cover no-repeat;
+  position:relative;
+  border:1px solid #1aff1a;
+}
+.dot{
+  width:14px;
+  height:14px;
+  background:red;
+  border-radius:50%;
+  position:absolute;
+  left:65%; /* adjust for NYC */
+  top:45%;
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse{
+  0%{transform:scale(0.7);opacity:0.8;}
+  100%{transform:scale(1.6);opacity:0;}
+}
 </style>
 </head>
 <body>
-  <main class="app">
-    <!-- Left: Scanner -->
-    <section class="panel scanner">
-      <div class="hd">
-        <span class="chip">Signal Scanner</span>
-        <span class="hint">Live acquisition</span>
-      </div>
-      <div class="body">
-        <div class="scanbox" id="scanbox">
-          <div class="sweep" aria-hidden="true"></div>
-          <!-- Clean avatar silhouette (inline SVG) -->
-          <div class="avatar" aria-hidden="true">
-            <svg viewBox="0 0 260 300" fill="none" stroke="url(#g)" stroke-width="2">
-              <defs>
-                <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
-                  <stop stop-color="#9efcff" offset="0"/>
-                  <stop stop-color="#2fb4b8" offset="1"/>
-                </linearGradient>
-              </defs>
-              <path d="M130 168c34 0 62-28 62-62S164 44 130 44 68 72 68 106s28 62 62 62Z"/>
-              <path d="M29 262c10-38 55-64 101-64s91 26 101 64" opacity=".8"/>
-            </svg>
-          </div>
-        </div>
-        <div class="statusbar">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="pulse-dot" aria-hidden="true"></div>
-            <strong>Signal Acquired</strong>
-          </div>
-          <button class="btn primary" id="trackBtn">Track</button>
-        </div>
-      </div>
-    </section>
+<div class="container">
+  <div class="left">
+    <div class="scan">
+      <svg viewBox="0 0 200 260">
+        <path d="M100 40c-30 0-50 20-50 50s20 60 50 60 50-30 50-60-20-50-50-50z"/>
+        <path d="M40 220c15-30 45-40 60-40s45 10 60 40"/>
+      </svg>
+    </div>
+  </div>
+  <div class="right">
+    <h2>CONFIRM I.D.</h2>
+    <div class="kv">Target: <span>JAMAR B.</span></div>
+    <div class="kv">Eye: <span>Light Brown</span></div>
+    <div class="kv">Hair: <span>Curly Black</span></div>
+    <div class="kv">Skin: <span>Black</span></div>
+    <div class="kv">Height: <span>5'8"</span></div>
+    <div class="kv">Criminal Records: <span>-</span></div>
 
-    <!-- Right: ID Details -->
-    <section class="panel details">
-      <div class="hd">
-        <h2>Confirm I.D.</h2>
-        <span class="chip" style="margin-left:auto">Target: JAMAR B.</span>
-      </div>
-      <div class="kv">
-        <label>Eye color</label><div class="val">Light Brown</div>
-        <label>Hair</label><div class="val">Curly Black</div>
-        <label>Skin</label><div class="val">Black</div>
-        <label>Height</label><div class="val">5'8"</div>
-        <label>Criminal records</label><div class="val ok">Clear</div>
-      </div>
-    </section>
-
-    <!-- Bottom-right: Global Tracking -->
-    <section class="panel map">
-      <div class="hd">
-        <h2>Global Tracking — NYC</h2>
-        <span class="chip">Orthographic globe</span>
-      </div>
-      <canvas id="globe" width="1000" height="640" aria-label="Globe with pulsing marker on New York City"></canvas>
-      <div class="legend">Pulsing dot marks New York City</div>
-      <div id="nycLabel" class="pingLabel" style="display:none;">NYC</div>
-    </section>
-  </main>
-
-<script>
-/* ---------- TRACK BUTTON INTERACTIONS ---------- */
-const trackBtn = document.getElementById('trackBtn');
-const scanbox = document.getElementById('scanbox');
-trackBtn.addEventListener('click', () => {
-  scanbox.animate(
-    [{filter:'brightness(1)'},{filter:'brightness(1.35)'},{filter:'brightness(1)'}],
-    {duration:700,easing:'ease'}
-  );
-  startGlobe(); // ensure animation running
-});
-
-/* ---------- GLOBE RENDERER (orthographic) ---------- */
-const canvas = document.getElementById('globe');
-const ctx = canvas.getContext('2d', {alpha: false});
-let animId = null;
-let started = false;
-
-// Projection parameters
-const R = Math.min(canvas.width, canvas.height) * 0.42; // sphere radius
-const cx = canvas.width * 0.5, cy = canvas.height * 0.55; // sphere center
-let phi0 = deg(30);   // center latitude
-let lambda0 = deg(-70); // center longitude
-
-// NYC coords
-const NYC = { lat: deg(40.7128), lon: deg(-74.0060) };
-
-function deg(d){ return d * Math.PI/180 }
-function radToDeg(r){ return r * 180/Math.PI }
-
-// Orthographic projection from lat φ, lon λ
-function project(lat, lon){
-  const sinφ = Math.sin(lat), cosφ = Math.cos(lat);
-  const sinφ0 = Math.sin(phi0), cosφ0 = Math.cos(phi0);
-  const dλ = lon - lambda0;
-  const cosc = sinφ0*sinφ + cosφ0*cosφ*Math.cos(dλ);
-  if (cosc < 0) return null; // back side not visible
-  const x = R * cosφ * Math.sin(dλ);
-  const y = R * (cosφ0*sinφ - sinφ0*cosφ*Math.cos(dλ));
-  return {x: cx + x, y: cy - y};
-}
-
-function drawSphereBase(){
-  // background
-  ctx.fillStyle = '#081017';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  // sphere body
-  ctx.save();
-  ctx.translate(cx,cy);
-  ctx.beginPath();
-  ctx.arc(0,0,R,0,Math.PI*2);
-  ctx.closePath();
-  ctx.fillStyle = '#0a131a';
-  ctx.fill();
-
-  // subtle rim
-  const grd = ctx.createRadialGradient(0,0,R*0.2,0,0,R);
-  grd.addColorStop(0,'rgba(158,252,255,0.05)');
-  grd.addColorStop(1,'rgba(32,226,122,0.05)');
-  ctx.strokeStyle = grd;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawGraticule(){
-  ctx.save();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(158,252,255,0.13)';
-  // longitudes every 15°
-  for(let lon=-180; lon<=180; lon+=15){
-    drawMeridian(deg(lon));
-  }
-  // latitudes every 15°
-  for(let lat=-75; lat<=75; lat+=15){
-    drawParallel(deg(lat));
-  }
-  ctx.restore();
-}
-
-function drawParallel(lat){
-  let first=true;
-  ctx.beginPath();
-  for(let lon=-180; lon<=180; lon+=2){
-    const p = project(lat, deg(lon));
-    if(!p){ first=true; continue; }
-    if(first){ ctx.moveTo(p.x,p.y); first=false; }
-    else ctx.lineTo(p.x,p.y);
-  }
-  ctx.stroke();
-}
-
-function drawMeridian(lon){
-  let first=true;
-  ctx.beginPath();
-  for(let lat=-90; lat<=90; lat+=2){
-    const p = project(deg(lat), lon);
-    if(!p){ first=true; continue; }
-    if(first){ ctx.moveTo(p.x,p.y); first=false; }
-    else ctx.lineTo(p.x,p.y);
-  }
-  ctx.stroke();
-}
-
-function drawNYCPing(t){
-  const p = project(NYC.lat, NYC.lon);
-  if(!p) return;
-
-  // pulsing ring
-  const r = 5 + 3 * (0.5 + 0.5*Math.sin(t*0.004));
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, r*2.1, 0, Math.PI*2);
-  ctx.strokeStyle = 'rgba(255,59,59,.35)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // solid dot
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, r, 0, Math.PI*2);
-  ctx.fillStyle = '#ff3b3b';
-  ctx.shadowColor = 'rgba(255,59,59,.6)';
-  ctx.shadowBlur = 14;
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // label position
-  const label = document.getElementById('nycLabel');
-  label.style.left = `${p.x + 22}px`;
-  label.style.top  = `${p.y - 8}px`;
-  if(label.style.display !== 'block') label.style.display = 'block';
-}
-
-function frame(t){
-  drawSphereBase();
-  drawGraticule();
-  drawNYCPing(t);
-  // slight auto-rotate for life
-  lambda0 += 0.0003; // radians per frame
-  animId = requestAnimationFrame(frame);
-}
-
-function startGlobe(){
-  if(started) return;
-  started = true;
-  cancelAnimationFrame(animId);
-  frame(0);
-}
-
-// initialize when visible
-startGlobe();
-</script>
+    <div class="map">
+      <div class="dot"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
