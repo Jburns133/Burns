@@ -1,79 +1,63 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Retro Bio-Scan Demo — Fixed</title>
-<style>
-  :root{
-    --accent:#00ff88;
-    --accent-2:#ff2b2b;
-    --glass: rgba(0,0,0,0.45);
-    --mono:'Courier New',monospace;
-  }
-  html,body{height:100%;margin:0;background:#000;font-family:var(--mono);color:var(--accent);overflow:hidden}
-  .stage{width:100%;height:100%;position:relative;display:flex;align-items:center;justify-content:center}
-  /* ---------- Screen 1 ---------- */
-  #screen-welcome{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-    background:
-      radial-gradient(circle at 50% 10%, #0a1726 0 32%, transparent 33%),
-      repeating-linear-gradient(0deg,#06121d 0 2px,#030a12 2px 4px),
-      #030a12;}
-  .prompt{margin:28px;align-self:flex-start;color:#e6f3ff;font-size:18px;background:rgba(0,0,0,0.6);padding:8px 12px;border-radius:6px;display:flex;gap:12px;align-items:center;box-shadow:0 6px 16px rgba(0,0,0,0.6)}
-  .prompt .cursor{font-weight:700;color:#bfffd6}
-  .enter-btn{
-    background:linear-gradient(180deg,#cfd09a,#9a9f7a);color:#042118;padding:6px 12px;border-radius:4px;font-weight:700;border:3px solid #303020;cursor:pointer;
-    box-shadow: 2px 3px 0 rgba(0,0,0,0.35) inset, 0 6px 12px rgba(0,0,0,0.6);
-    transform:translateY(0);transition:transform .08s ease;
-  }
-  .enter-btn:active{transform:translateY(2px)}
-  /* ---------- Screen 2 ---------- */
-  #screen-scan{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#000}
-  .scan-wrap{width:min(1100px,93vw);height:min(720px,85vh);display:flex;gap:18px;align-items:stretch}
-  .left-panel{flex:0 0 56%;position:relative;background:#07101a;border:2px solid rgba(0,255,136,0.06);box-shadow:0 10px 40px rgba(0,0,0,0.9);overflow:hidden;border-radius:6px}
-  .scanbox{position:absolute;inset:0;background:#001218}
-  /* grid */
-  .scanbox::before{
-    content:"";position:absolute;inset:6% 10%;border:2px solid rgba(255,200,0,0.45);mix-blend-mode:screen;
-    background-image:
-      linear-gradient(to bottom, rgba(255,200,0,0.06) 0 1px, transparent 1px),
-      linear-gradient(to right, rgba(255,200,0,0.04) 0 1px, transparent 1px);
-    background-size:100% 40px, 40px 100%;
-  }
-  /* sweep */
-  .sweep{
-    position:absolute;left:-30%;top:-10%;width:40%;height:120%;
-    background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.03) 55%, rgba(255,255,255,0) 100%);
-    transform:skewX(-18deg);animation:sweep 3s linear infinite;mix-blend-mode:screen;filter:blur(.4px)
-  }
-  @keyframes sweep{0%{left:-30%}50%{left:60%}100%{left:120%}}
-  /* silhouette */
-  .sil-wrap{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
-  .sil-wrap svg{width:min(70%,420px);height:auto;stroke:#75ffb9;stroke-width:2;fill:none;opacity:.8;filter:drop-shadow(0 0 6px rgba(0,255,136,.15))}
-  .bottom-banner{position:absolute;left:0;right:0;bottom:0;padding:12px;background:linear-gradient(180deg, transparent, rgba(0,0,0,0.7));text-align:center;color:#cfeee0;font-weight:800;font-size:14px;letter-spacing:1px}
-  .side-panel{flex:0 0 38%;padding:18px;background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.3));border-radius:6px;border:2px solid rgba(0,255,136,0.06);display:flex;flex-direction:column;gap:10px}
-  .hud-title{font-size:18px;color:#ff8c8c;letter-spacing:1px}
-  .hud-sub{font-size:12px;color:#9fded0}
-  .biometrics{background:linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.05));padding:10px;border-radius:6px;flex:1;display:flex;flex-direction:column;gap:4px;overflow:auto}
-  .bio-row{display:flex;justify-content:space-between;padding:6px 6px;border-bottom:1px dashed rgba(255,255,255,0.06)}
-  .bio-label{color:#8de2c5;font-size:12px}
-  .bio-value{color:#fff;font-weight:700;font-size:12px}
-  .status{height:36px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#021016;color:#bfffd6;font-weight:800;border:2px solid rgba(0,255,136,0.08);font-size:12px}
-  .progress{height:6px;background:rgba(255,255,255,0.04);border-radius:999px;overflow:hidden;margin-top:6px}
-  .progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent), #70ffb4);animation:progressAnim 4s linear forwards}
-  @keyframes progressAnim{to{width:100%}}
-  /* ---------- Screen 3 ---------- */
-  #screen-globe{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#000}
-  .globe-wrap{position:relative;width:min(1200px,95vw);height:min(800px,90vh);display:flex;align-items:center;justify-content:center}
-  .globe-bg{position:relative;width:100%;height:100%;border-radius:6px;box-shadow:0 20px 60px rgba(0,0,0,0.85);overflow:hidden;border:3px solid rgba(0,255,136,0.05);background:#06131c}
-  canvas#globe{width:100%;height:100%;display:block}
-  .globe-caption{position:absolute;left:24px;top:24px;color:#ffd6a6;font-weight:800;background:rgba(0,0,0,0.45);padding:8px 12px;border-radius:6px;border:1px solid rgba(255,200,150,0.06)}
-  .legend{position:absolute;left:24px;bottom:20px;color:#9fded0;font-size:12px;background:rgba(0,0,0,.35);padding:6px 8px;border-radius:6px;border:1px solid rgba(0,255,136,.06)}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Retro Bio-Scan Demo</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --accent:#00ff88;
+      --accent-2:#ff2b2b;
+      --retro:#bfc09a;
+      --mono:'Courier New',monospace;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(#02060a,#041021);font-family:var(--mono);color:var(--accent);overflow:hidden}
+    .stage{width:100%;height:100%;position:relative;display:flex;align-items:center;justify-content:center}
+    /* --- Screen 1 --- */
+    #screen-welcome{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;background:#0d1a2a}
+    .prompt{margin:28px;align-self:flex-start;color:#e6f3ff;font-size:18px;background:rgba(0,0,0,0.6);padding:8px 12px;border-radius:6px;display:flex;gap:12px;align-items:center;}
+    .cursor{font-weight:700;color:#bfffd6}
+    .enter-btn{background:linear-gradient(180deg,#cfd09a,#9a9f7a);color:#042118;padding:6px 12px;border-radius:4px;font-weight:700;border:3px solid #303020;cursor:pointer;}
+    /* --- Screen 2: Scan --- */
+    #screen-scan{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#000}
+    .scan-wrap{width:min(1100px,93vw);height:min(720px,85vh);display:flex;gap:18px;align-items:stretch}
+    .left-panel{flex:0 0 56%;position:relative;background:#07101a;border:2px solid rgba(0,255,136,0.1);box-shadow:0 10px 40px rgba(0,0,0,0.9);overflow:hidden;border-radius:6px;display:flex;align-items:center;justify-content:center}
+    .wireframe-person{width:70%;height:auto;stroke:var(--accent);fill:none;stroke-width:2;opacity:0.85}
+    .scan-overlay{position:absolute;inset:0;pointer-events:none}
+    .scan-grid{position:absolute;inset:8% 12%;border:2px solid rgba(0,255,136,0.25);background-image:linear-gradient(to bottom, rgba(0,255,136,0.05) 1px, transparent 1px),linear-gradient(to right, rgba(0,255,136,0.05) 1px, transparent 1px);background-size:100% 30px,30px 100%;}
+    .sweep{position:absolute;left:-30%;top:-10%;width:40%;height:120%;background:linear-gradient(90deg, transparent 0%, rgba(0,255,136,0.2) 50%, transparent 100%);transform:skewX(-18deg);animation:sweep 3s linear infinite;}
+    @keyframes sweep{0%{left:-30%}50%{left:60%}100%{left:120%}}
+    .bottom-banner{position:absolute;left:0;right:0;bottom:0;padding:10px;background:rgba(0,0,0,0.6);text-align:center;color:#bfffd6;font-weight:800}
+    .side-panel{flex:0 0 38%;padding:18px;background:rgba(0,0,0,0.55);border-radius:6px;border:2px solid rgba(0,255,136,0.1);display:flex;flex-direction:column;gap:12px}
+    .hud-title{font-size:22px;color:var(--accent-2);}
+    .hud-sub{font-size:13px;color:#9fded0}
+    .biometrics{flex:1;display:flex;flex-direction:column;gap:6px;font-size:13px}
+    .bio-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed rgba(255,255,255,0.05)}
+    .bio-label{color:#8de2c5}
+    .bio-value{color:#fff;font-weight:700}
+    .status{height:40px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#021016;color:#bfffd6;font-weight:800}
+    .progress{height:8px;background:rgba(255,255,255,0.04);border-radius:999px;overflow:hidden}
+    .progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent), #70ffb4);animation:progressAnim 6s linear forwards}
+    @keyframes progressAnim{to{width:100%}}
+    /* --- Screen 3: Globe --- */
+    #screen-globe{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#000}
+    .globe-wrap{position:relative;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #0a1a25, #000);border:2px solid rgba(0,255,136,0.2);box-shadow:0 0 40px rgba(0,255,136,0.2) inset,0 0 60px rgba(0,0,0,0.8);}
+    .lat-line,.lon-line{position:absolute;border:1px solid rgba(0,255,136,0.15);border-radius:50%}
+    .lat-line{width:100%;height:50%}
+    .lat-line:nth-child(2){top:25%}
+    .lat-line:nth-child(3){top:50%}
+    .lon-line{width:50%;height:100%}
+    .lon-line:nth-child(4){left:25%}
+    .lon-line:nth-child(5){left:50%}
+    .ping{position:absolute;width:20px;height:20px;border-radius:50%;background:var(--accent-2);left:65%;top:38%;transform:translate(-50%,-50%);box-shadow:0 0 20px rgba(255,50,50,0.9);}
+    .ping::after{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(255,50,50,0.4);animation:pingPulse 1.8s ease-out infinite}
+    @keyframes pingPulse{0%{transform:scale(1);opacity:1}100%{transform:scale(3);opacity:0}}
+  </style>
 </head>
 <body>
   <div class="stage">
-    <!-- SCREEN 1 -->
+    <!-- Screen 1 -->
     <section id="screen-welcome">
       <div class="prompt">
         <div>A:<span class="cursor">:&gt;_</span></div>
@@ -81,19 +65,28 @@
       </div>
     </section>
 
-    <!-- SCREEN 2 -->
+    <!-- Screen 2 -->
     <section id="screen-scan">
       <div class="scan-wrap">
         <div class="left-panel">
-          <div class="scanbox"></div>
-          <div class="sil-wrap" aria-hidden="true">
-            <!-- inline silhouette -->
-            <svg viewBox="0 0 260 300">
-              <path d="M130 168c34 0 62-28 62-62S164 44 130 44 68 72 68 106s28 62 62 62Z"/>
-              <path d="M29 262c10-38 55-64 101-64s91 26 101 64"/>
-            </svg>
+          <!-- Wireframe person -->
+          <svg class="wireframe-person" viewBox="0 0 200 600">
+            <path d="M100,20
+                     C120,20 140,40 140,60
+                     C140,90 120,110 100,110
+                     C80,110 60,90 60,60
+                     C60,40 80,20 100,20Z
+                     M100,110 L100,200
+                     M100,200 L60,300
+                     M100,200 L140,300
+                     M100,200 L100,400
+                     M100,400 L60,500
+                     M100,400 L140,500"/>
+          </svg>
+          <div class="scan-overlay">
+            <div class="scan-grid"></div>
+            <div class="sweep"></div>
           </div>
-          <div class="sweep"></div>
           <div class="bottom-banner"><span id="scanStatus">Searching...</span></div>
         </div>
         <aside class="side-panel">
@@ -113,135 +106,41 @@
       </div>
     </section>
 
-    <!-- SCREEN 3 -->
+    <!-- Screen 3 -->
     <section id="screen-globe">
       <div class="globe-wrap">
-        <div class="globe-bg">
-          <canvas id="globe"></canvas>
-          <div class="globe-caption">GLOBAL TRACKING — NYC</div>
-          <div class="legend">Orthographic globe with pulsing marker</div>
-        </div>
+        <div class="lat-line" style="top:25%;"></div>
+        <div class="lat-line" style="top:50%;"></div>
+        <div class="lat-line" style="top:75%;"></div>
+        <div class="lon-line" style="left:25%;"></div>
+        <div class="lon-line" style="left:50%;"></div>
+        <div class="lon-line" style="left:75%;"></div>
+        <div class="ping"></div>
       </div>
     </section>
   </div>
 
-<script>
-/* ---------- Screen routing ---------- */
-const enterBtn=document.getElementById('enterBtn');
-const contBtn=document.getElementById('continueToGlobe');
-const screenWelcome=document.getElementById('screen-welcome');
-const screenScan=document.getElementById('screen-scan');
-const screenGlobe=document.getElementById('screen-globe');
-const scanStatus=document.getElementById('scanStatus');
-const statusText=document.getElementById('statusText');
+  <script>
+    const enterBtn=document.getElementById('enterBtn');
+    const contBtn=document.getElementById('continueToGlobe');
+    const screenWelcome=document.getElementById('screen-welcome');
+    const screenScan=document.getElementById('screen-scan');
+    const screenGlobe=document.getElementById('screen-globe');
+    const scanStatus=document.getElementById('scanStatus');
+    const statusText=document.getElementById('statusText');
 
-function showScreen(el){
-  [screenWelcome,screenScan,screenGlobe].forEach(s=>s.style.display='none');
-  el.style.display='flex';
-}
-
-enterBtn.onclick=()=>{
-  showScreen(screenScan);
-  setTimeout(()=>{scanStatus.textContent='Signal Acquired';statusText.textContent='SIGNAL ACQUIRED'},3500);
-};
-contBtn.onclick=()=>showScreen(screenGlobe);
-showScreen(screenWelcome);
-
-/* ---------- Globe renderer (no external assets) ---------- */
-(function(){
-  const canvas = document.getElementById('globe');
-  const ctx = canvas.getContext('2d', {alpha:false});
-  let phi0 = toRad(30);        // center latitude
-  let lambda0 = toRad(-70);    // center longitude
-  const NYC = { lat: toRad(40.7128), lon: toRad(-74.0060) };
-
-  function toRad(d){return d*Math.PI/180}
-  function fit(){
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
-  }
-  function project(lat, lon, R, cx, cy){
-    const sinφ = Math.sin(lat), cosφ = Math.cos(lat);
-    const sinφ0 = Math.sin(phi0), cosφ0 = Math.cos(phi0);
-    const dλ = lon - lambda0;
-    const cosc = sinφ0*sinφ + cosφ0*cosφ*Math.cos(dλ);
-    if (cosc < 0) return null;
-    const x = R * cosφ * Math.sin(dλ);
-    const y = R * (cosφ0*sinφ - sinφ0*cosφ*Math.cos(dλ));
-    return {x: cx + x, y: cy - y};
-  }
-  function drawParallel(lat, R, cx, cy){
-    ctx.beginPath();
-    let move=true;
-    for(let lon=-180; lon<=180; lon+=2){
-      const p = project(toRad(lat), toRad(lon), R, cx, cy);
-      if(!p){ move=true; continue; }
-      if(move){ctx.moveTo(p.x,p.y); move=false;} else ctx.lineTo(p.x,p.y);
-    }
-    ctx.stroke();
-  }
-  function drawMeridian(lon, R, cx, cy){
-    ctx.beginPath();
-    let move=true;
-    for(let lat=-90; lat<=90; lat+=2){
-      const p = project(toRad(lat), toRad(lon), R, cx, cy);
-      if(!p){ move=true; continue; }
-      if(move){ctx.moveTo(p.x,p.y); move=false;} else ctx.lineTo(p.x,p.y);
-    }
-    ctx.stroke();
-  }
-  function draw(){
-    const w = canvas.clientWidth, h = canvas.clientHeight;
-    const cx = w*0.5, cy = h*0.52;
-    const R = Math.min(w,h)*0.38;
-
-    // background
-    ctx.fillStyle = '#06131c';
-    ctx.fillRect(0,0,w,h);
-
-    // sphere
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.closePath();
-    ctx.fillStyle = '#051018';
-    ctx.fill();
-    const rim = ctx.createRadialGradient(0,0,R*0.2,0,0,R);
-    rim.addColorStop(0,'rgba(0,255,136,.06)');
-    rim.addColorStop(1,'rgba(0,255,136,.18)');
-    ctx.strokeStyle = rim; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.restore();
-
-    // graticule
-    ctx.strokeStyle = 'rgba(158,252,255,0.14)';
-    ctx.lineWidth = 1;
-    for(let lon=-180; lon<=180; lon+=15) drawMeridian(lon,R,cx,cy);
-    for(let lat=-75; lat<=75; lat+=15) drawParallel(lat,R,cx,cy);
-
-    // NYC ping
-    const p = project(NYC.lat, NYC.lon, R, cx, cy);
-    if(p){
-      const t = performance.now();
-      const r = 5 + 2*(0.5+0.5*Math.sin(t*0.006));
-      ctx.beginPath(); ctx.arc(p.x,p.y,r*2.2,0,Math.PI*2);
-      ctx.strokeStyle = 'rgba(255,43,43,.35)'; ctx.lineWidth=2; ctx.stroke();
-      ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
-      ctx.fillStyle = '#ff2b2b'; ctx.shadowColor='rgba(255,43,43,.7)'; ctx.shadowBlur=14; ctx.fill();
-      ctx.shadowBlur=0;
+    function showScreen(el){
+      [screenWelcome,screenScan,screenGlobe].forEach(s=>s.style.display='none');
+      el.style.display='flex';
     }
 
-    lambda0 += 0.00035; // slow rotation
-    requestAnimationFrame(draw);
-  }
+    enterBtn.onclick=()=>{
+      showScreen(screenScan);
+      setTimeout(()=>{scanStatus.textContent='Signal Acquired';statusText.textContent='SIGNAL ACQUIRED'},4000);
+    };
+    contBtn.onclick=()=>showScreen(screenGlobe);
 
-  function start(){ fit(); draw(); }
-  window.addEventListener('resize', fit, {passive:true});
-  // autostart when globe screen is shown
-  const obs = new MutationObserver(()=>{ if (screenGlobe.style.display==='flex') start(); });
-  obs.observe(screenGlobe,{attributes:true,attributeFilter:['style']});
-})();
-</script>
+    showScreen(screenWelcome);
+  </script>
 </body>
 </html>
