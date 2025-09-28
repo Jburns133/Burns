@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mario-Style Power Up Game</title>
+    <title>Game</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,7 +18,7 @@
             position: relative;
         }
         canvas {
-            background-color: #87CEEB; /* Sky blue background */
+            background-color: #87CEEB;
             border: 1px solid #000;
             display: block;
             margin: 0 auto;
@@ -34,10 +34,10 @@
 </head>
 <body>
     <div id="game-container">
-        <h1>Mario-Style Power Up Game</h1>
-        <p id="instructions">Use arrow keys to move and jump. Collect joints (green cylinders) to power up and increase your score. Avoid falling off platforms.</p>
+        <h1>Power Up Game</h1>
+        <p id="instructions">Use arrow keys to move and jump. Collect joints to power up. Avoid falling off platforms.</p>
         <canvas id="gameCanvas" width="800" height="400"></canvas>
-        <div id="score">Power Level: 0</div>
+        <div id="score">Power: 0</div>
     </div>
 
     <script>
@@ -55,18 +55,18 @@
             velocityX: 0,
             velocityY: 0,
             jumping: false,
-            color: '#8B4513' // Dark brown for skin tone
+            color: '#8B4513'
         };
 
         let platforms = [
-            { x: 0, y: 350, width: 800, height: 50, color: '#228B22' }, // Ground
+            { x: 0, y: 350, width: 800, height: 50, color: '#228B22' },
             { x: 200, y: 250, width: 150, height: 20, color: '#228B22' },
             { x: 400, y: 200, width: 150, height: 20, color: '#228B22' },
             { x: 600, y: 150, width: 150, height: 20, color: '#228B22' }
         ];
 
         let items = [
-            { x: 250, y: 200, width: 20, height: 20, color: '#008000', collected: false }, // Joint (green cylinder)
+            { x: 250, y: 200, width: 20, height: 20, color: '#008000', collected: false },
             { x: 450, y: 150, width: 20, height: 20, color: '#008000', collected: false },
             { x: 650, y: 100, width: 20, height: 20, color: '#008000', collected: false }
         ];
@@ -85,12 +85,10 @@
         });
 
         function update() {
-            // Apply gravity
             player.velocityY += gravity;
             player.y += player.velocityY;
             player.x += player.velocityX;
 
-            // Movement
             if (keys['ArrowLeft']) player.velocityX = -moveSpeed;
             else if (keys['ArrowRight']) player.velocityX = moveSpeed;
             else player.velocityX = 0;
@@ -100,7 +98,6 @@
                 player.jumping = true;
             }
 
-            // Collision with platforms
             player.jumping = true;
             for (let platform of platforms) {
                 if (
@@ -115,7 +112,6 @@
                 }
             }
 
-            // Collect items
             for (let item of items) {
                 if (!item.collected &&
                     player.x + player.width > item.x &&
@@ -125,15 +121,13 @@
                 ) {
                     item.collected = true;
                     score += 10;
-                    scoreElement.textContent = `Power Level: ${score}`;
+                    scoreElement.textContent = `Power: ${score}`;
                 }
             }
 
-            // Boundaries
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
             if (player.y > canvas.height) {
-                // Reset on fall
                 player.x = 50;
                 player.y = 300;
                 player.velocityY = 0;
@@ -143,13 +137,11 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw platforms
             for (let platform of platforms) {
                 ctx.fillStyle = platform.color;
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
             }
 
-            // Draw items
             for (let item of items) {
                 if (!item.collected) {
                     ctx.fillStyle = item.color;
@@ -157,10 +149,9 @@
                 }
             }
 
-            // Draw player (simple rectangle for body, add head and clothes)
-            ctx.fillStyle = player.color; // Head/skin
+            ctx.fillStyle = player.color;
             ctx.fillRect(player.x, player.y, player.width, player.height / 2);
-            ctx.fillStyle = '#808080'; // Ragged clothes
+            ctx.fillStyle = '#808080';
             ctx.fillRect(player.x, player.y + player.height / 2, player.width, player.height / 2);
         }
 
