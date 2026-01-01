@@ -1,37 +1,55 @@
-const alien = document.getElementById("alien");
-const mouth = document.querySelector(".mouth");
-const sceneAlien = document.getElementById("scene-alien");
-const sceneShip = document.getElementById("scene-ship");
-const statusText = document.getElementById("status");
-const coordsText = document.getElementById("coords");
+const game = document.getElementById("game");
+const ufo = document.getElementById("ufo");
+const beam = document.getElementById("beam");
+const scoreEl = document.getElementById("score");
 
-alien.addEventListener("click", () => {
-  mouth.classList.add("open");
+let ufoX = window.innerWidth / 2;
+let score = 0;
+let sticks = [];
+
+function createStick() {
+  const stick = document.createElement("div");
+  stick.className = "stick";
+  stick.style.left = Math.random() * (window.innerWidth - 20) + "px";
+  game.appendChild(stick);
+
+  sticks.push({
+    el: stick,
+    y: window.innerHeight - 80
+  });
+}
+
+function moveUFO(x) {
+  ufoX = x;
+  ufo.style.left = ufoX + "px";
+  beam.style.left = (ufoX + 10) + "px";
+}
+
+function activateBeam() {
+  beam.style.display = "block";
+  beam.style.height = window.innerHeight + "px";
+
+  sticks.forEach((stick, index) => {
+    const stickX = stick.el.offsetLeft;
+    if (Math.abs(stickX - ufoX) < 30) {
+      game.removeChild(stick.el);
+      sticks.splice(index, 1);
+      score++;
+      scoreEl.textContent = "Score: " + score;
+    }
+  });
 
   setTimeout(() => {
-    sceneAlien.classList.remove("active");
-    sceneShip.classList.add("active");
-    startScanning();
-  }, 900);
-});
-
-function startScanning() {
-  const messages = [
-    "SEARCHING FOR LIFEFORM...",
-    "SCANNING NEURAL SIGNALS...",
-    "ANALYZING BIO-SIGNATURE...",
-    "TARGET NOT FOUND...",
-    "RECALIBRATING..."
-  ];
-
-  let index = 0;
-
-  setInterval(() => {
-    statusText.textContent = messages[index % messages.length];
-    coordsText.textContent =
-      "COORDS: " +
-      (Math.random() * 999).toFixed(2) + " : " +
-      (Math.random() * 999).toFixed(2);
-    index++;
-  }, 1200);
+    beam.style.display = "none";
+    beam.style.height = "0";
+  }, 300);
 }
+
+/* CONTROLS */
+document.addEventListener("mousemove", e => moveUFO(e.clientX));
+document.addEventListener("touchmove", e => moveUFO(e.touches[0].clientX));
+document.addEventListener("click", activateBeam);
+document.addEventListener("touchstart", activateBeam);
+
+/* SPAWN STICK FIGURES */
+setInterval(createStick, 1500);
