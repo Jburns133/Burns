@@ -4,16 +4,147 @@
   <meta charset="UTF-8">
   <title>Alien Abduction</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
 </head>
 <body>
 
-  <div id="game">
-    <div id="score">Score: 0</div>
-    <div id="ufo"></div>
-    <div id="beam"></div>
-  </div>
+<canvas id="game"></canvas>
 
-  <script src="script.js"></script>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+// GAME STATE
+let ufoX = canvas.width / 2;
+let beamOn = false;
+let score = 0;
+
+const sticks = [];
+
+function spawnStick() {
+  sticks.push({
+    x: Math.random() * canvas.width,
+    y: canvas.height - 60,
+    alive: true
+  });
+}
+setInterval(spawnStick, 1200);
+
+// INPUT
+document.addEventListener("mousemove", e => ufoX = e.clientX);
+document.addEventListener("touchmove", e => ufoX = e.touches[0].clientX);
+document.addEventListener("mousedown", () => beamOn = true);
+document.addEventListener("mouseup", () => beamOn = false);
+document.addEventListener("touchstart", () => beamOn = true);
+document.addEventListener("touchend", () => beamOn = false);
+
+// DRAW FUNCTIONS
+function drawUFO() {
+  ctx.fillStyle = "#bbb";
+  ctx.beginPath();
+  ctx.ellipse(ufoX, 100, 50, 18, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(0,255,255,0.8)";
+  ctx.beginPath();
+  ctx.ellipse(ufoX, 85, 25, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBeam() {
+  if (!beamOn) return;
+
+  ctx.fillStyle = "rgba(0,255,255,0.25)";
+  ctx.beginPath();
+  ctx.moveTo(ufoX - 25, 115);
+  ctx.lineTo(ufoX + 25, 115);
+  ctx.lineTo(ufoX + 60, canvas.height);
+  ctx.lineTo(ufoX - 60, canvas.height);
+  ctx.closePath();
+  ctx.fill();
+
+  sticks.forEach(stick => {
+    if (!stick.alive) return;
+    if (Math.abs(stick.x - ufoX) < 40) {
+      stick.y -= 6;
+      if (stick.y < 120) {
+        stick.alive = false;
+        score++;
+      }
+    }
+  });
+}
+
+function drawStick(stick) {
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 2;
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(stick.x, stick.y - 20, 6, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Body
+  ctx.beginPath();
+  ctx.moveTo(stick.x, stick.y - 14);
+  ctx.lineTo(stick.x, stick.y + 20);
+  ctx.stroke();
+
+  // Arms
+  ctx.beginPath();
+  ctx.moveTo(stick.x - 10, stick.y);
+  ctx.lineTo(stick.x + 10, stick.y);
+  ctx.stroke();
+
+  // Legs
+  ctx.beginPath();
+  ctx.moveTo(stick.x, stick.y + 20);
+  ctx.lineTo(stick.x - 10, stick.y + 35);
+  ctx.moveTo(stick.x, stick.y + 20);
+  ctx.lineTo(stick.x + 10, stick.y + 35);
+  ctx.stroke();
+}
+
+// GAME LOOP
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Ground
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+
+  drawUFO();
+  drawBeam();
+
+  sticks.forEach(stick => {
+    if (stick.alive) drawStick(stick);
+  });
+
+  // Score
+  ctx.fillStyle = "#00ffcc";
+  ctx.font = "16px monospace";
+  ctx.fillText("Abductions: " + score, 20, 30);
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
 </body>
 </html>
