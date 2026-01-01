@@ -1,37 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Transmission Detected</title>
+  <meta charset="UTF-8">
+  <title>Alien Abduction</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- OPENING SCENE -->
-  <div id="scene-alien" class="scene active">
-    <div class="stars"></div>
-
-    <div id="alien" aria-label="Alien">
-      <div class="head">
-        <div class="eye left"></div>
-        <div class="eye right"></div>
-        <div class="mouth"></div>
-      </div>
-      <p class="hint">CLICK THE ALIEN</p>
-    </div>
-  </div>
-
-  <!-- SPACESHIP INTERFACE -->
-  <div id="scene-ship" class="scene">
-    <div class="hud">
-      <div class="scan-circle"></div>
-      <div class="crosshair"></div>
-      <div class="hud-text">
-        <p id="status">INITIALIZING SCAN...</p>
-        <p id="coords"></p>
-      </div>
-    </div>
+  <div id="game">
+    <div id="score">Score: 0</div>
+    <div id="ufo"></div>
+    <div id="beam"></div>
   </div>
 
   <script src="script.js"></script>
