@@ -2,11 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Alien Abduction: Ultimate</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Alien Abduction: Fullscreen</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#050510">
 <style>
-  body { margin:0; background:#050510; overflow:hidden; font-family: 'Courier New', sans-serif; touch-action: none; }
-  canvas { display:block; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: #050510;
+    overflow: hidden; /* Prevents scrolling */
+    touch-action: none; /* Stops pull-to-refresh */
+  }
+  canvas {
+    display: block;
+    position: fixed; /* Locks it to the screen */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
 </style>
 </head>
 <body>
@@ -18,46 +35,60 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 // --- GAME VARIABLES ---
-let ufoX = innerWidth / 2;
-let targetX = innerWidth / 2;
-let ufoTilt = 0; // For tilting physics
+let ufoX = window.innerWidth / 2;
+let targetX = window.innerWidth / 2;
+let ufoTilt = 0;
 let beamOn = false;
 let score = 0;
 let highScore = localStorage.getItem('alienHighScore') || 0;
 let energy = 100;
-let frame = 0; // For animations
+let frame = 0;
 
 const humans = [];
-const particles = []; // For explosions
-const stars = [];     // For background
+const particles = [];
+const stars = [];
 
-// --- RESIZE & SETUP ---
+// --- ROBUST RESIZING ---
+// This function ensures the internal resolution matches the screen size exactly
 function resize(){
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
-  initStars();
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  initStars(); // Re-scatter stars if screen changes
 }
+// Listen for orientation changes (turning phone sideways)
 window.addEventListener("resize", resize);
+window.addEventListener("orientationchange", () => setTimeout(resize, 100)); // Delay slightly for screen rotation
+resize();
 
 // --- INPUTS ---
 const updatePos = (x) => targetX = x;
+
+// Touch & Mouse Logic
 window.addEventListener("mousemove", e => updatePos(e.clientX));
 window.addEventListener("touchmove", e => { 
   updatePos(e.touches[0].clientX); 
-  e.preventDefault(); 
+  e.preventDefault(); // Stop screen from dragging
 }, {passive:false});
 
-const startBeam = () => beamOn = true;
-const endBeam = () => beamOn = false;
+const startBeam = (e) => {
+  if(e.cancelable) e.preventDefault(); // Stop double-tap zoom
+  beamOn = true;
+};
+const endBeam = (e) => {
+  beamOn = false;
+};
+
 window.addEventListener("mousedown", startBeam);
 window.addEventListener("mouseup", endBeam);
-window.addEventListener("touchstart", startBeam);
+window.addEventListener("touchstart", startBeam, {passive: false});
 window.addEventListener("touchend", endBeam);
 
-// --- STARS SYSTEM (Parallax) ---
+// --- STARS SYSTEM ---
 function initStars(){
   stars.length = 0;
-  for(let i=0; i<100; i++){
+  // Create more stars for bigger screens
+  const count = Math.floor(canvas.width * canvas.height / 4000); 
+  for(let i=0; i<count; i++){
     stars.push({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
@@ -66,7 +97,6 @@ function initStars(){
     });
   }
 }
-initStars();
 
 function drawStars(){
   ctx.fillStyle = "white";
@@ -79,7 +109,7 @@ function drawStars(){
   ctx.globalAlpha = 1.0;
 }
 
-// --- PARTICLE SYSTEM (Confetti) ---
+// --- PARTICLES ---
 function spawnParticles(x, y, color){
   for(let i=0; i<15; i++){
     particles.push({
@@ -98,7 +128,6 @@ function drawParticles(){
     p.y += p.vy;
     p.life -= 0.03;
     if(p.life <= 0) particles.splice(i, 1);
-    
     ctx.fillStyle = p.color;
     ctx.globalAlpha = p.life;
     ctx.fillRect(p.x, p.y, 4, 4);
@@ -106,7 +135,7 @@ function drawParticles(){
   ctx.globalAlpha = 1.0;
 }
 
-// --- HUMANS (Blocky & Animated) ---
+// --- HUMANS ---
 const skins = [
   { name: "WORKER", skin: "#ffccaa", shirt: "#ff6600", pants: "#0000dd", hat: "#ffff00" },
   { name: "PUNK",   skin: "#ffccaa", shirt: "#111111", pants: "#333333", hat: "#ff0055" },
@@ -132,13 +161,10 @@ function drawBlockyHuman(h){
   const x = h.x;
   const y = h.y - h.lift;
   const s = h.type;
-  
-  // Running Animation (Legs moving)
   h.legAnim += 0.5;
   const legOffset = h.lift > 0 ? 0 : Math.sin(h.legAnim) * 3;
 
   ctx.save();
-  // Panic Shake
   if(h.lift > 0) ctx.translate(Math.random()*2 - 1, 0);
 
   // Shadow
@@ -149,20 +175,16 @@ function drawBlockyHuman(h){
     ctx.fill();
   }
 
-  // LEGS
+  // Draw Body Parts
   ctx.fillStyle = s.pants;
-  ctx.fillRect(x - 6, y + legOffset, 5, 12); // L
-  ctx.fillRect(x + 1, y - legOffset, 5, 12); // R
-
-  // BODY
+  ctx.fillRect(x - 6, y + legOffset, 5, 12);
+  ctx.fillRect(x + 1, y - legOffset, 5, 12);
   ctx.fillStyle = s.shirt;
   ctx.fillRect(x - 7, y - 12, 14, 12);
-  
-  // HEAD
   ctx.fillStyle = s.skin;
   ctx.fillRect(x - 5, y - 20, 10, 8);
 
-  // HAT/HAIR
+  // Hats
   if(s.name === "WORKER"){
     ctx.fillStyle = s.hat;
     ctx.fillRect(x - 6, y - 23, 12, 4);
@@ -175,7 +197,7 @@ function drawBlockyHuman(h){
     ctx.fillRect(x - 5, y - 25, 10, 4);
   }
 
-  // ARMS (Flailing if lifted)
+  // Arms
   ctx.fillStyle = s.skin;
   if(h.lift > 0) {
     ctx.fillRect(x - 12, y - 24 + Math.sin(h.legAnim*2)*4, 4, 10);
@@ -189,11 +211,9 @@ function drawBlockyHuman(h){
 
 // --- UFO ---
 function drawUFO(){
-  // Physics Tilt
   let diff = targetX - ufoX;
   ufoX += diff * 0.1;
-  ufoTilt = diff * 0.05; // Tilt based on speed
-  ufoTilt = Math.max(-0.4, Math.min(0.4, ufoTilt)); // Clamp tilt
+  ufoTilt = Math.max(-0.4, Math.min(0.4, diff * 0.05));
 
   const y = 110;
 
@@ -201,20 +221,18 @@ function drawUFO(){
   ctx.translate(ufoX, y);
   ctx.rotate(ufoTilt);
 
-  // 1. DOME (Back)
+  // Dome & Alien
   ctx.fillStyle = "rgba(0, 200, 255, 0.4)";
   ctx.beginPath();
   ctx.arc(0, -10, 35, Math.PI, 0);
   ctx.fill();
 
-  // 2. ALIEN
   ctx.fillStyle = "#33cc33";
   ctx.beginPath();
   ctx.ellipse(0, -15, 12, 16, 0, 0, Math.PI*2);
   ctx.fill();
   
-  // Alien Eyes (Blinking)
-  if(frame % 150 < 140) { // Blink every few seconds
+  if(frame % 150 < 140) {
     ctx.fillStyle = "black";
     ctx.beginPath();
     ctx.ellipse(-5, -15, 4, 6, -0.2, 0, Math.PI*2);
@@ -222,24 +240,24 @@ function drawUFO(){
     ctx.fill();
   }
 
-  // 3. DOME (Front Reflection)
+  // Reflection
   ctx.strokeStyle = "rgba(255,255,255,0.7)";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(10, -25, 8, 1.5*Math.PI, 0);
   ctx.stroke();
 
-  // 4. SAUCER
+  // Saucer
   ctx.fillStyle = "#ccc";
   ctx.beginPath();
   ctx.ellipse(0, 0, 60, 18, 0, 0, Math.PI*2);
   ctx.fill();
-  ctx.fillStyle = "#ff9900"; // Orange Rim
+  ctx.fillStyle = "#ff9900";
   ctx.beginPath();
   ctx.ellipse(0, 5, 60, 5, 0, 0, Math.PI*2);
   ctx.fill();
 
-  // 5. LIGHTS
+  // Lights
   const time = Date.now() / 150;
   for(let i=0; i<5; i++){
     ctx.fillStyle = `hsl(${(time * 100 + i*60) % 360}, 100%, 60%)`;
@@ -248,7 +266,6 @@ function drawUFO(){
     ctx.arc(lx, 8, 4, 0, Math.PI*2);
     ctx.fill();
   }
-  
   ctx.restore();
 }
 
@@ -258,7 +275,7 @@ function drawBeam(){
   
   ctx.save();
   ctx.translate(ufoX, 120);
-  ctx.rotate(ufoTilt * 0.5); // Beam tilts slightly too
+  ctx.rotate(ufoTilt * 0.5);
 
   const grd = ctx.createLinearGradient(0, 0, 0, canvas.height-120);
   grd.addColorStop(0, "rgba(0, 255, 220, 0.6)");
@@ -268,13 +285,13 @@ function drawBeam(){
   ctx.beginPath();
   ctx.moveTo(-20, 0);
   ctx.lineTo(20, 0);
-  ctx.lineTo(70, canvas.height);
+  ctx.lineTo(70, canvas.height); // Beam stretches to infinite bottom
   ctx.lineTo(-70, canvas.height);
   ctx.fill();
   ctx.restore();
 }
 
-// --- MAIN LOOP ---
+// --- LOOP ---
 function loop(){
   frame++;
   // Background
@@ -286,22 +303,21 @@ function loop(){
 
   drawStars();
 
-  // City Floor
+  // Floor
   ctx.fillStyle = "#111";
   ctx.fillRect(0, canvas.height-40, canvas.width, 40);
-  ctx.fillStyle = "#222"; // Road
+  ctx.fillStyle = "#222";
   ctx.fillRect(0, canvas.height-35, canvas.width, 2);
 
   drawBeam();
   drawParticles();
 
-  // Humans Logic
+  // Game Logic
   humans.forEach((h, index) => {
     let dist = Math.abs(h.x - ufoX);
     if(beamOn && dist < 50 && energy > 0){
-      h.lift += 6; // Lift speed
+      h.lift += 6;
       if(h.lift > canvas.height - 150) {
-        // ABDUCTED!
         spawnParticles(ufoX, 130, h.type.shirt);
         humans.splice(index, 1);
         score++;
@@ -312,7 +328,7 @@ function loop(){
         energy = Math.min(100, energy + 12);
       }
     } else {
-      if(h.lift > 0) h.lift -= 8; // Drop fast
+      if(h.lift > 0) h.lift -= 8;
       else {
         h.x += h.vx;
         if(h.x < 0 || h.x > canvas.width) h.vx *= -1;
@@ -331,13 +347,11 @@ function loop(){
   ctx.fillStyle = "#aaa";
   ctx.fillText("BEST: " + highScore, 20, 60);
   
-  // Energy Bar
   ctx.fillStyle = "#444";
   ctx.fillRect(20, 75, 100, 8);
   ctx.fillStyle = energy > 20 ? "#00ffcc" : "#ff0055";
   ctx.fillRect(20, 75, energy, 8);
 
-  // Recharge
   if(!beamOn) energy = Math.min(100, energy + 0.25);
 
   requestAnimationFrame(loop);
