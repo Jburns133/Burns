@@ -2,357 +2,188 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Alien Abduction: Fullscreen</title>
+<title>Stoned Alien Abduction</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#050510">
 <style>
-  html, body {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    background: #050510;
-    overflow: hidden; /* Prevents scrolling */
-    touch-action: none; /* Stops pull-to-refresh */
+  html, body { width: 100%; height: 100%; margin: 0; padding: 0; background: #050510; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
+  canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+  #menu {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(5, 5, 16, 0.9); z-index: 10; color: #0f0; text-align: center;
   }
-  canvas {
-    display: block;
-    position: fixed; /* Locks it to the screen */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
+  h1 { font-size: 3rem; text-shadow: 0 0 20px #0f0; margin-bottom: 10px; }
+  .btn {
+    padding: 15px 40px; font-size: 1.5rem; background: #0f0; color: #000;
+    border: none; border-radius: 50px; cursor: pointer; font-weight: bold;
+    box-shadow: 0 0 15px #0f0; transition: 0.3s;
   }
+  .btn:active { transform: scale(0.9); box-shadow: 0 0 5px #0f0; }
 </style>
 </head>
 <body>
+
+<div id="menu">
+  <canvas id="alienFace" width="200" height="200"></canvas>
+  <h1>STONED ALIENS</h1>
+  <p style="color: #888;">THEY'RE HUNGRY FOR BLOCKHEADS</p>
+  <button class="btn" onclick="startGame()">START GAME</button>
+</div>
 
 <canvas id="game"></canvas>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const menu = document.getElementById("menu");
+const faceCanvas = document.getElementById("alienFace");
+const fctx = faceCanvas.getContext("2d");
 
-// --- GAME VARIABLES ---
-let ufoX = window.innerWidth / 2;
-let targetX = window.innerWidth / 2;
-let ufoTilt = 0;
-let beamOn = false;
-let score = 0;
-let highScore = localStorage.getItem('alienHighScore') || 0;
-let energy = 100;
-let frame = 0;
+let gameRunning = false;
+let ufoX = window.innerWidth / 2, targetX = window.innerWidth / 2, ufoTilt = 0;
+let beamOn = false, score = 0, energy = 100, frame = 0;
+const humans = [], particles = [], stars = [];
 
-const humans = [];
-const particles = [];
-const stars = [];
+// --- AUDIO SYNTHESIZER ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(freq, type, duration, vol) {
+  if (!gameRunning) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + duration);
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
 
-// --- ROBUST RESIZING ---
-// This function ensures the internal resolution matches the screen size exactly
+// --- DRAW STONED ALIEN FACE ---
+function drawStonedAlien() {
+  fctx.clearRect(0,0,200,200);
+  fctx.fillStyle = "#33cc33";
+  fctx.beginPath(); // Head
+  fctx.ellipse(100, 100, 60, 80, 0, 0, Math.PI*2);
+  fctx.fill();
+  // Droopy Eyes
+  fctx.fillStyle = "#fff";
+  fctx.beginPath();
+  fctx.ellipse(75, 80, 20, 15, 0.2, 0, Math.PI*2);
+  fctx.ellipse(125, 80, 20, 15, -0.2, 0, Math.PI*2);
+  fctx.fill();
+  // Red veins (stoned)
+  fctx.strokeStyle = "rgba(255,0,0,0.5)";
+  fctx.lineWidth = 1;
+  fctx.beginPath(); fctx.moveTo(65, 80); fctx.lineTo(85, 85); fctx.stroke();
+  // Pupils (lowered)
+  fctx.fillStyle = "#000";
+  fctx.beginPath();
+  fctx.arc(75, 85, 8, 0, Math.PI*2);
+  fctx.arc(125, 85, 8, 0, Math.PI*2);
+  fctx.fill();
+  // Smile
+  fctx.strokeStyle = "#000";
+  fctx.lineWidth = 3;
+  fctx.beginPath(); fctx.arc(100, 130, 20, 0.2, Math.PI-0.2); fctx.stroke();
+}
+drawStonedAlien();
+
+function startGame() {
+  audioCtx.resume();
+  menu.style.display = "none";
+  gameRunning = true;
+  score = 0;
+  energy = 100;
+  resize();
+}
+
 function resize(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  initStars(); // Re-scatter stars if screen changes
+  stars.length = 0;
+  for(let i=0; i<100; i++) stars.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*2, sp: Math.random()*0.5+0.1});
 }
-// Listen for orientation changes (turning phone sideways)
 window.addEventListener("resize", resize);
-window.addEventListener("orientationchange", () => setTimeout(resize, 100)); // Delay slightly for screen rotation
 resize();
 
 // --- INPUTS ---
-const updatePos = (x) => targetX = x;
+const move = (x) => targetX = x;
+window.addEventListener("mousemove", e => move(e.clientX));
+window.addEventListener("touchmove", e => { move(e.touches[0].clientX); e.preventDefault(); }, {passive:false});
+window.addEventListener("mousedown", () => { beamOn = true; playSound(400, 'sawtooth', 0.5, 0.1); });
+window.addEventListener("mouseup", () => beamOn = false);
+window.addEventListener("touchstart", (e) => { beamOn = true; playSound(400, 'sawtooth', 0.5, 0.1); e.preventDefault(); }, {passive:false});
+window.addEventListener("touchend", () => beamOn = false);
 
-// Touch & Mouse Logic
-window.addEventListener("mousemove", e => updatePos(e.clientX));
-window.addEventListener("touchmove", e => { 
-  updatePos(e.touches[0].clientX); 
-  e.preventDefault(); // Stop screen from dragging
-}, {passive:false});
-
-const startBeam = (e) => {
-  if(e.cancelable) e.preventDefault(); // Stop double-tap zoom
-  beamOn = true;
-};
-const endBeam = (e) => {
-  beamOn = false;
-};
-
-window.addEventListener("mousedown", startBeam);
-window.addEventListener("mouseup", endBeam);
-window.addEventListener("touchstart", startBeam, {passive: false});
-window.addEventListener("touchend", endBeam);
-
-// --- STARS SYSTEM ---
-function initStars(){
-  stars.length = 0;
-  // Create more stars for bigger screens
-  const count = Math.floor(canvas.width * canvas.height / 4000); 
-  for(let i=0; i<count; i++){
-    stars.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      size: Math.random() * 2,
-      speed: Math.random() * 0.5 + 0.1
-    });
-  }
-}
-
-function drawStars(){
-  ctx.fillStyle = "white";
-  stars.forEach(s => {
-    s.y += s.speed;
-    if(s.y > canvas.height) s.y = 0;
-    ctx.globalAlpha = Math.random() * 0.5 + 0.3;
-    ctx.fillRect(s.x, s.y, s.size, s.size);
-  });
-  ctx.globalAlpha = 1.0;
-}
-
-// --- PARTICLES ---
-function spawnParticles(x, y, color){
-  for(let i=0; i<15; i++){
-    particles.push({
-      x: x, y: y,
-      vx: (Math.random() - 0.5) * 10,
-      vy: (Math.random() - 0.5) * 10,
-      life: 1.0,
-      color: color
-    });
-  }
-}
-
-function drawParticles(){
-  particles.forEach((p, i) => {
-    p.x += p.vx;
-    p.y += p.vy;
-    p.life -= 0.03;
-    if(p.life <= 0) particles.splice(i, 1);
-    ctx.fillStyle = p.color;
-    ctx.globalAlpha = p.life;
-    ctx.fillRect(p.x, p.y, 4, 4);
-  });
-  ctx.globalAlpha = 1.0;
-}
-
-// --- HUMANS ---
+// --- HUMAN SKINS ---
 const skins = [
-  { name: "WORKER", skin: "#ffccaa", shirt: "#ff6600", pants: "#0000dd", hat: "#ffff00" },
-  { name: "PUNK",   skin: "#ffccaa", shirt: "#111111", pants: "#333333", hat: "#ff0055" },
-  { name: "SUIT",   skin: "#8d5524", shirt: "#440088", pants: "#220044", hat: "#220044" },
-  { name: "BEACH",  skin: "#ffccaa", shirt: "#ff00aa", pants: "#00ffcc", hat: "" }
+  { n: "WORKER", s: "#ffccaa", sh: "#ff6600", p: "#0000dd", h: "#ffff00" },
+  { n: "PUNK",   s: "#ffccaa", sh: "#111111", p: "#333333", h: "#ff0055" },
+  { n: "SUIT",   s: "#8d5524", sh: "#440088", p: "#220044", h: "#220044" }
 ];
 
 function spawnHuman(){
-  if(humans.length < 8) {
-    humans.push({
-      x: Math.random() * canvas.width,
-      y: canvas.height - 50,
-      type: skins[Math.floor(Math.random() * skins.length)],
-      vx: (Math.random() - 0.5) * 3,
-      lift: 0,
-      legAnim: 0
-    });
+  if(humans.length < 8 && gameRunning) {
+    humans.push({ x: Math.random()*canvas.width, y: canvas.height-50, t: skins[Math.floor(Math.random()*skins.length)], vx: (Math.random()-0.5)*3, lift: 0 });
   }
 }
 setInterval(spawnHuman, 800);
 
-function drawBlockyHuman(h){
-  const x = h.x;
-  const y = h.y - h.lift;
-  const s = h.type;
-  h.legAnim += 0.5;
-  const legOffset = h.lift > 0 ? 0 : Math.sin(h.legAnim) * 3;
-
-  ctx.save();
-  if(h.lift > 0) ctx.translate(Math.random()*2 - 1, 0);
-
-  // Shadow
-  if(h.lift < 10){
-    ctx.fillStyle = "rgba(0,0,0,0.3)";
-    ctx.beginPath();
-    ctx.ellipse(x, canvas.height-38, 8, 3, 0, 0, Math.PI*2);
-    ctx.fill();
-  }
-
-  // Draw Body Parts
-  ctx.fillStyle = s.pants;
-  ctx.fillRect(x - 6, y + legOffset, 5, 12);
-  ctx.fillRect(x + 1, y - legOffset, 5, 12);
-  ctx.fillStyle = s.shirt;
-  ctx.fillRect(x - 7, y - 12, 14, 12);
-  ctx.fillStyle = s.skin;
-  ctx.fillRect(x - 5, y - 20, 10, 8);
-
-  // Hats
-  if(s.name === "WORKER"){
-    ctx.fillStyle = s.hat;
-    ctx.fillRect(x - 6, y - 23, 12, 4);
-  } else if (s.name === "PUNK") {
-    ctx.fillStyle = s.hat;
-    ctx.fillRect(x - 2, y - 26, 4, 6);
-  } else if (s.name === "SUIT") {
-    ctx.fillStyle = s.hat;
-    ctx.fillRect(x - 7, y - 22, 14, 3);
-    ctx.fillRect(x - 5, y - 25, 10, 4);
-  }
-
-  // Arms
-  ctx.fillStyle = s.skin;
-  if(h.lift > 0) {
-    ctx.fillRect(x - 12, y - 24 + Math.sin(h.legAnim*2)*4, 4, 10);
-    ctx.fillRect(x + 8, y - 24 + Math.cos(h.legAnim*2)*4, 4, 10);
-  } else {
-    ctx.fillRect(x - 11, y - 12, 4, 10);
-    ctx.fillRect(x + 7, y - 12, 4, 10);
-  }
-  ctx.restore();
-}
-
-// --- UFO ---
-function drawUFO(){
-  let diff = targetX - ufoX;
-  ufoX += diff * 0.1;
-  ufoTilt = Math.max(-0.4, Math.min(0.4, diff * 0.05));
-
-  const y = 110;
-
-  ctx.save();
-  ctx.translate(ufoX, y);
-  ctx.rotate(ufoTilt);
-
-  // Dome & Alien
-  ctx.fillStyle = "rgba(0, 200, 255, 0.4)";
-  ctx.beginPath();
-  ctx.arc(0, -10, 35, Math.PI, 0);
-  ctx.fill();
-
-  ctx.fillStyle = "#33cc33";
-  ctx.beginPath();
-  ctx.ellipse(0, -15, 12, 16, 0, 0, Math.PI*2);
-  ctx.fill();
-  
-  if(frame % 150 < 140) {
-    ctx.fillStyle = "black";
-    ctx.beginPath();
-    ctx.ellipse(-5, -15, 4, 6, -0.2, 0, Math.PI*2);
-    ctx.ellipse(5, -15, 4, 6, 0.2, 0, Math.PI*2);
-    ctx.fill();
-  }
-
-  // Reflection
-  ctx.strokeStyle = "rgba(255,255,255,0.7)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(10, -25, 8, 1.5*Math.PI, 0);
-  ctx.stroke();
-
-  // Saucer
-  ctx.fillStyle = "#ccc";
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 60, 18, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle = "#ff9900";
-  ctx.beginPath();
-  ctx.ellipse(0, 5, 60, 5, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  // Lights
-  const time = Date.now() / 150;
-  for(let i=0; i<5; i++){
-    ctx.fillStyle = `hsl(${(time * 100 + i*60) % 360}, 100%, 60%)`;
-    let lx = -40 + i * 20;
-    ctx.beginPath();
-    ctx.arc(lx, 8, 4, 0, Math.PI*2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
-function drawBeam(){
-  if(!beamOn || energy <= 0) return;
-  energy -= 0.4;
-  
-  ctx.save();
-  ctx.translate(ufoX, 120);
-  ctx.rotate(ufoTilt * 0.5);
-
-  const grd = ctx.createLinearGradient(0, 0, 0, canvas.height-120);
-  grd.addColorStop(0, "rgba(0, 255, 220, 0.6)");
-  grd.addColorStop(1, "rgba(0, 255, 220, 0)");
-  
-  ctx.fillStyle = grd;
-  ctx.beginPath();
-  ctx.moveTo(-20, 0);
-  ctx.lineTo(20, 0);
-  ctx.lineTo(70, canvas.height); // Beam stretches to infinite bottom
-  ctx.lineTo(-70, canvas.height);
-  ctx.fill();
-  ctx.restore();
-}
-
-// --- LOOP ---
 function loop(){
   frame++;
-  // Background
-  const bgGrad = ctx.createLinearGradient(0,0,0,canvas.height);
-  bgGrad.addColorStop(0, "#050510");
-  bgGrad.addColorStop(1, "#202040");
-  ctx.fillStyle = bgGrad;
+  ctx.fillStyle = "#050510";
   ctx.fillRect(0,0,canvas.width, canvas.height);
-
-  drawStars();
-
-  // Floor
-  ctx.fillStyle = "#111";
-  ctx.fillRect(0, canvas.height-40, canvas.width, 40);
-  ctx.fillStyle = "#222";
-  ctx.fillRect(0, canvas.height-35, canvas.width, 2);
-
-  drawBeam();
-  drawParticles();
-
-  // Game Logic
-  humans.forEach((h, index) => {
-    let dist = Math.abs(h.x - ufoX);
-    if(beamOn && dist < 50 && energy > 0){
-      h.lift += 6;
-      if(h.lift > canvas.height - 150) {
-        spawnParticles(ufoX, 130, h.type.shirt);
-        humans.splice(index, 1);
-        score++;
-        if(score > highScore) {
-           highScore = score;
-           localStorage.setItem('alienHighScore', highScore);
-        }
-        energy = Math.min(100, energy + 12);
-      }
-    } else {
-      if(h.lift > 0) h.lift -= 8;
-      else {
-        h.x += h.vx;
-        if(h.x < 0 || h.x > canvas.width) h.vx *= -1;
-      }
-    }
-    drawBlockyHuman(h);
+  
+  stars.forEach(s => {
+    s.y += s.sp; if(s.y > canvas.height) s.y = 0;
+    ctx.fillStyle = "white"; ctx.fillRect(s.x, s.y, s.s, s.s);
   });
 
-  drawUFO();
+  if(!gameRunning) { requestAnimationFrame(loop); return; }
+
+  // Draw Floor
+  ctx.fillStyle = "#111"; ctx.fillRect(0, canvas.height-40, canvas.width, 40);
+
+  // Beam
+  if(beamOn && energy > 0) {
+    energy -= 0.5;
+    const grd = ctx.createLinearGradient(ufoX, 120, ufoX, canvas.height);
+    grd.addColorStop(0, "rgba(0, 255, 100, 0.5)"); grd.addColorStop(1, "transparent");
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.moveTo(ufoX-20, 120); ctx.lineTo(ufoX+20, 120); ctx.lineTo(ufoX+60, canvas.height); ctx.lineTo(ufoX-60, canvas.height); ctx.fill();
+  }
+
+  // UFO
+  ufoX += (targetX - ufoX) * 0.1;
+  ctx.save(); ctx.translate(ufoX, 110);
+  ctx.fillStyle = "rgba(0,255,255,0.3)"; ctx.beginPath(); ctx.arc(0,-10,35,Math.PI,0); ctx.fill(); // Dome
+  ctx.fillStyle = "#33cc33"; ctx.beginPath(); ctx.ellipse(0,-15,10,14,0,0,Math.PI*2); ctx.fill(); // Alien
+  ctx.fillStyle = "#ccc"; ctx.beginPath(); ctx.ellipse(0,0,60,18,0,0,Math.PI*2); ctx.fill(); // Saucer
+  ctx.restore();
+
+  // Humans
+  humans.forEach((h, i) => {
+    if(beamOn && Math.abs(h.x-ufoX) < 50) {
+      h.lift += 6;
+      if(h.lift > canvas.height-160) {
+        humans.splice(i,1); score++; energy = Math.min(100, energy+15);
+        playSound(800, 'sine', 0.2, 0.2); // Abduction sound
+      }
+    } else { if(h.lift > 0) h.lift -= 8; else h.x += h.vx; if(h.x<0||h.x>canvas.width) h.vx*=-1; }
+    
+    // Draw blocky man
+    ctx.fillStyle = h.t.sh; ctx.fillRect(h.x-7, canvas.height-h.lift-62, 14, 12);
+    ctx.fillStyle = h.t.s; ctx.fillRect(h.x-5, canvas.height-h.lift-70, 10, 8);
+  });
 
   // UI
-  ctx.fillStyle = "white";
-  ctx.font = "bold 20px Courier New";
-  ctx.fillText("SCORE: " + score, 20, 40);
-  ctx.font = "14px Courier New";
-  ctx.fillStyle = "#aaa";
-  ctx.fillText("BEST: " + highScore, 20, 60);
-  
-  ctx.fillStyle = "#444";
-  ctx.fillRect(20, 75, 100, 8);
-  ctx.fillStyle = energy > 20 ? "#00ffcc" : "#ff0055";
-  ctx.fillRect(20, 75, energy, 8);
-
-  if(!beamOn) energy = Math.min(100, energy + 0.25);
+  ctx.fillStyle = "#0f0"; ctx.font = "bold 20px Courier"; ctx.fillText("SCORE: "+score, 20, 40);
+  ctx.fillStyle = "#333"; ctx.fillRect(20, 50, 100, 10);
+  ctx.fillStyle = "#0f0"; ctx.fillRect(20, 50, energy, 10);
+  if(!beamOn) energy = Math.min(100, energy+0.2);
 
   requestAnimationFrame(loop);
 }
