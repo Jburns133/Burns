@@ -2,185 +2,172 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Alien Abduction</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alien Abduction Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-body { margin:0; background:black; overflow:hidden; }
-canvas { display:block; }
+  body { margin:0; background:#050505; overflow:hidden; font-family: 'Courier New', Courier, monospace; touch-action: none; }
+  canvas { display:block; }
 </style>
 </head>
 <body>
-
 <canvas id="game"></canvas>
-
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+
+let ufoX = innerWidth / 2;
+let targetX = innerWidth / 2;
+let beamOn = false;
+let score = 0;
+let energy = 100;
+let level = 1;
+const humans = [];
 
 function resize(){
   canvas.width = innerWidth;
   canvas.height = innerHeight;
 }
 resize();
-addEventListener("resize", resize);
+window.addEventListener("resize", resize);
 
-// -------- STARFIELD --------
-const stars = Array.from({length:120},()=>({
-  x:Math.random()*innerWidth,
-  y:Math.random()*innerHeight,
-  s:Math.random()*2+0.5
+// STARS WITH DEPTH
+const stars = Array.from({length:150}, () => ({
+  x: Math.random() * innerWidth,
+  y: Math.random() * innerHeight,
+  s: Math.random() * 2 + 0.5,
+  opacity: Math.random()
 }));
 
 function drawStars(){
-  ctx.fillStyle="white";
-  stars.forEach(st=>{
-    st.y+=st.s*0.2;
-    if(st.y>canvas.height) st.y=0;
-    ctx.fillRect(st.x,st.y,2,2);
+  stars.forEach(st => {
+    st.y += st.s * 0.5;
+    if(st.y > canvas.height) st.y = 0;
+    ctx.fillStyle = `rgba(255, 255, 255, ${st.opacity})`;
+    ctx.fillRect(st.x, st.y, st.s, st.s);
   });
 }
 
-// -------- GAME STATE --------
-let ufoX = canvas.width/2;
-let beamOn=false;
-let score=0;
-let energy=100;
+// INPUTS
+const updatePos = (x) => targetX = x;
+window.addEventListener("mousemove", e => updatePos(e.clientX));
+window.addEventListener("touchmove", e => { updatePos(e.touches[0].clientX); e.preventDefault(); }, {passive:false});
+window.addEventListener("mousedown", () => beamOn = true);
+window.addEventListener("mouseup", () => beamOn = false);
+window.addEventListener("touchstart", () => beamOn = true);
+window.addEventListener("touchend", () => beamOn = false);
 
-const humans=[];
-
-// -------- HUMANS --------
 function spawnHuman(){
-  humans.push({
-    x:Math.random()*canvas.width,
-    y:canvas.height-60,
-    vx:Math.random()<0.5?-1.2:1.2,
-    alive:true
-  });
+  if(humans.length < 5 + level) {
+    humans.push({
+      x: Math.random() * canvas.width,
+      y: canvas.height - 50,
+      vx: (Math.random() - 0.5) * (2 + level),
+      beingLifted: false,
+      angle: 0
+    });
+  }
 }
-setInterval(spawnHuman, 1200);
+setInterval(spawnHuman, 1000);
 
-// -------- INPUT --------
-addEventListener("mousemove",e=>ufoX=e.clientX);
-addEventListener("touchmove",e=>ufoX=e.touches[0].clientX);
-addEventListener("mousedown",()=>beamOn=true);
-addEventListener("mouseup",()=>beamOn=false);
-addEventListener("touchstart",()=>beamOn=true);
-addEventListener("touchend",()=>beamOn=false);
-
-// -------- DRAW UFO --------
 function drawUFO(){
-  ctx.fillStyle="#bbb";
+  // Smooth easing movement
+  ufoX += (targetX - ufoX) * 0.15;
+
+  // UFO Glow
+  const grd = ctx.createRadialGradient(ufoX, 90, 5, ufoX, 100, 50);
+  grd.addColorStop(0, "rgba(0, 255, 255, 0.2)");
+  grd.addColorStop(1, "transparent");
+  ctx.fillStyle = grd;
+  ctx.fillRect(ufoX-60, 50, 120, 100);
+
+  // Body
+  ctx.fillStyle = "#888";
   ctx.beginPath();
-  ctx.ellipse(ufoX,100,55,18,0,0,Math.PI*2);
+  ctx.ellipse(ufoX, 100, 50, 15, 0, 0, Math.PI*2);
   ctx.fill();
 
-  ctx.fillStyle="rgba(0,255,255,.9)";
+  // Cockpit
+  ctx.fillStyle = "rgba(100, 220, 255, 0.8)";
   ctx.beginPath();
-  ctx.ellipse(ufoX,85,26,12,0,0,Math.PI*2);
+  ctx.ellipse(ufoX, 92, 22, 12, 0, 0, Math.PI*2);
   ctx.fill();
-
-  // lights
-  for(let i=-30;i<=30;i+=15){
-    ctx.fillStyle=`hsl(${Date.now()/10+i},100%,60%)`;
-    ctx.beginPath();
-    ctx.arc(ufoX+i,100,3,0,Math.PI*2);
-    ctx.fill();
-  }
 }
 
-// -------- BEAM --------
 function drawBeam(){
-  if(!beamOn||energy<=0) return;
-  energy-=0.3;
+  if(!beamOn || energy <= 0) return;
+  energy -= 0.4;
 
-  ctx.fillStyle="rgba(0,255,255,0.25)";
+  const gradient = ctx.createLinearGradient(ufoX, 115, ufoX, canvas.height);
+  gradient.addColorStop(0, "rgba(0, 255, 150, 0.4)");
+  gradient.addColorStop(1, "rgba(0, 255, 255, 0)");
+
+  ctx.fillStyle = gradient;
   ctx.beginPath();
-  ctx.moveTo(ufoX-30,118);
-  ctx.lineTo(ufoX+30,118);
-  ctx.lineTo(ufoX+70,canvas.height);
-  ctx.lineTo(ufoX-70,canvas.height);
-  ctx.closePath();
+  ctx.moveTo(ufoX-25, 115);
+  ctx.lineTo(ufoX+25, 115);
+  ctx.lineTo(ufoX+60, canvas.height);
+  ctx.lineTo(ufoX-60, canvas.height);
   ctx.fill();
+}
 
-  humans.forEach(h=>{
-    if(!h.alive) return;
-    if(Math.abs(h.x-ufoX)<45){
-      h.y-=3;
-      if(h.y<120){
-        h.alive=false;
+function updateHumans(){
+  humans.forEach((h, i) => {
+    h.angle += 0.1;
+    let inBeam = beamOn && Math.abs(h.x - ufoX) < 40;
+
+    if(inBeam && energy > 0){
+      h.y -= 4;
+      h.x += Math.sin(h.angle) * 2; // Wiggle effect
+      if(h.y < 110) {
+        humans.splice(i, 1);
         score++;
-        energy=Math.min(100,energy+10);
+        energy = Math.min(100, energy + 15);
+        if(score % 10 === 0) level++;
       }
+    } else {
+      if(h.y < canvas.height - 50) h.y += 5; // Gravity
+      h.x += h.vx;
+      if(h.x < 0 || h.x > canvas.width) h.vx *= -1;
     }
+
+    // Draw Human
+    ctx.strokeStyle = inBeam ? "#0f0" : "white";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(h.x, h.y-20, 5, 0, Math.PI*2); // Head
+    ctx.moveTo(h.x, h.y-15); ctx.lineTo(h.x, h.y); // Body
+    ctx.moveTo(h.x-8, h.y-10); ctx.lineTo(h.x+8, h.y-10); // Arms
+    ctx.moveTo(h.x, h.y); ctx.lineTo(h.x-5, h.y+10); // L-Leg
+    ctx.moveTo(h.x, h.y); ctx.lineTo(h.x+5, h.y+10); // R-Leg
+    ctx.stroke();
   });
 }
 
-// -------- HUMAN --------
-function drawHuman(h){
-  h.x+=h.vx;
-  if(h.x<0||h.x>canvas.width) h.vx*=-1;
-
-  ctx.strokeStyle="white";
-  ctx.lineWidth=2;
-
-  ctx.beginPath();
-  ctx.arc(h.x,h.y-20,6,0,Math.PI*2);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(h.x,h.y-14);
-  ctx.lineTo(h.x,h.y+18);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(h.x-10,h.y);
-  ctx.lineTo(h.x+10,h.y);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(h.x,h.y+18);
-  ctx.lineTo(h.x-8,h.y+32);
-  ctx.moveTo(h.x,h.y+18);
-  ctx.lineTo(h.x+8,h.y+32);
-  ctx.stroke();
-}
-
-// -------- CITY --------
-function drawCity(){
-  ctx.fillStyle="#111";
-  for(let i=0;i<canvas.width;i+=60){
-    const h=Math.random()*60+40;
-    ctx.fillRect(i,canvas.height-40-h,50,h);
-  }
-  ctx.fillRect(0,canvas.height-40,canvas.width,40);
-}
-
-// -------- UI --------
 function drawUI(){
-  ctx.fillStyle="#00ffcc";
-  ctx.font="16px monospace";
-  ctx.fillText("Abductions: "+score,20,30);
-
-  ctx.fillStyle="#444";
-  ctx.fillRect(20,40,100,8);
-  ctx.fillStyle="#00ffcc";
-  ctx.fillRect(20,40,energy,8);
+  ctx.fillStyle = "#0ff";
+  ctx.font = "bold 18px Courier New";
+  ctx.fillText(`ABDUCTIONS: ${score}`, 20, 40);
+  ctx.fillText(`LEVEL: ${level}`, 20, 65);
+  
+  // Energy Bar
+  ctx.strokeStyle = "#0ff";
+  ctx.strokeRect(20, 80, 100, 10);
+  ctx.fillStyle = energy < 20 ? "#f00" : "#0ff";
+  ctx.fillRect(20, 80, energy, 10);
 }
 
-// -------- LOOP --------
 function loop(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#050505";
+  ctx.fillRect(0,0,canvas.width, canvas.height);
   drawStars();
-  drawCity();
-  drawUFO();
   drawBeam();
-  humans.forEach(h=>h.alive&&drawHuman(h));
+  drawUFO();
+  updateHumans();
   drawUI();
-  if(!beamOn) energy=Math.min(100,energy+0.1);
+  if(!beamOn) energy = Math.min(100, energy + 0.15);
   requestAnimationFrame(loop);
 }
 loop();
 </script>
-
 </body>
 </html>
