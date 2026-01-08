@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Alien Abduction: Blocky Edition</title>
+<title>Alien Abduction: Ultimate</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  body { margin:0; background:#111; overflow:hidden; font-family: 'Courier New', sans-serif; touch-action: none; }
+  body { margin:0; background:#050510; overflow:hidden; font-family: 'Courier New', sans-serif; touch-action: none; }
   canvas { display:block; }
 </style>
 </head>
@@ -17,23 +17,29 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// GAME STATE
+// --- GAME VARIABLES ---
 let ufoX = innerWidth / 2;
 let targetX = innerWidth / 2;
+let ufoTilt = 0; // For tilting physics
 let beamOn = false;
 let score = 0;
+let highScore = localStorage.getItem('alienHighScore') || 0;
 let energy = 100;
-const humans = [];
+let frame = 0; // For animations
 
-// RESIZE
+const humans = [];
+const particles = []; // For explosions
+const stars = [];     // For background
+
+// --- RESIZE & SETUP ---
 function resize(){
   canvas.width = innerWidth;
   canvas.height = innerHeight;
+  initStars();
 }
-resize();
 window.addEventListener("resize", resize);
 
-// INPUTS (Mouse & Touch)
+// --- INPUTS ---
 const updatePos = (x) => targetX = x;
 window.addEventListener("mousemove", e => updatePos(e.clientX));
 window.addEventListener("touchmove", e => { 
@@ -48,13 +54,64 @@ window.addEventListener("mouseup", endBeam);
 window.addEventListener("touchstart", startBeam);
 window.addEventListener("touchend", endBeam);
 
-// --- CHARACTERS (Blocky Style) ---
-// We define different "skins" to match your image
+// --- STARS SYSTEM (Parallax) ---
+function initStars(){
+  stars.length = 0;
+  for(let i=0; i<100; i++){
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 2,
+      speed: Math.random() * 0.5 + 0.1
+    });
+  }
+}
+initStars();
+
+function drawStars(){
+  ctx.fillStyle = "white";
+  stars.forEach(s => {
+    s.y += s.speed;
+    if(s.y > canvas.height) s.y = 0;
+    ctx.globalAlpha = Math.random() * 0.5 + 0.3;
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+  });
+  ctx.globalAlpha = 1.0;
+}
+
+// --- PARTICLE SYSTEM (Confetti) ---
+function spawnParticles(x, y, color){
+  for(let i=0; i<15; i++){
+    particles.push({
+      x: x, y: y,
+      vx: (Math.random() - 0.5) * 10,
+      vy: (Math.random() - 0.5) * 10,
+      life: 1.0,
+      color: color
+    });
+  }
+}
+
+function drawParticles(){
+  particles.forEach((p, i) => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.03;
+    if(p.life <= 0) particles.splice(i, 1);
+    
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life;
+    ctx.fillRect(p.x, p.y, 4, 4);
+  });
+  ctx.globalAlpha = 1.0;
+}
+
+// --- HUMANS (Blocky & Animated) ---
 const skins = [
-  { name: "WORKER", skin: "#ffccaa", shirt: "#ff6600", pants: "#0000dd", hat: "#ffff00" }, // Construction
-  { name: "PUNK",   skin: "#ffccaa", shirt: "#111111", pants: "#333333", hat: "#ff0055" }, // Mohawk
-  { name: "SUIT",   skin: "#8d5524", shirt: "#440088", pants: "#220044", hat: "#220044" }, // Purple Suit
-  { name: "BEACH",  skin: "#ffccaa", shirt: "#ff00aa", pants: "#00ffcc", hat: "" }         // Beach
+  { name: "WORKER", skin: "#ffccaa", shirt: "#ff6600", pants: "#0000dd", hat: "#ffff00" },
+  { name: "PUNK",   skin: "#ffccaa", shirt: "#111111", pants: "#333333", hat: "#ff0055" },
+  { name: "SUIT",   skin: "#8d5524", shirt: "#440088", pants: "#220044", hat: "#220044" },
+  { name: "BEACH",  skin: "#ffccaa", shirt: "#ff00aa", pants: "#00ffcc", hat: "" }
 ];
 
 function spawnHuman(){
@@ -63,169 +120,199 @@ function spawnHuman(){
       x: Math.random() * canvas.width,
       y: canvas.height - 50,
       type: skins[Math.floor(Math.random() * skins.length)],
-      vx: (Math.random() - 0.5) * 2.5,
+      vx: (Math.random() - 0.5) * 3,
       lift: 0,
-      wobble: Math.random() * 10
+      legAnim: 0
     });
   }
 }
-setInterval(spawnHuman, 1000);
-
-// DRAWING FUNCTIONS
+setInterval(spawnHuman, 800);
 
 function drawBlockyHuman(h){
   const x = h.x;
   const y = h.y - h.lift;
-  const s = h.type; // Skin data
+  const s = h.type;
   
+  // Running Animation (Legs moving)
+  h.legAnim += 0.5;
+  const legOffset = h.lift > 0 ? 0 : Math.sin(h.legAnim) * 3;
+
   ctx.save();
-  // Wiggle if being lifted
-  if(h.lift > 0) ctx.translate(Math.sin(h.wobble)*3, 0);
+  // Panic Shake
+  if(h.lift > 0) ctx.translate(Math.random()*2 - 1, 0);
 
-  // 1. LEGS (Blocky)
+  // Shadow
+  if(h.lift < 10){
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.beginPath();
+    ctx.ellipse(x, canvas.height-38, 8, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // LEGS
   ctx.fillStyle = s.pants;
-  // Left leg
-  ctx.fillRect(x - 6, y, 5, 12);
-  // Right leg
-  ctx.fillRect(x + 1, y, 5, 12);
+  ctx.fillRect(x - 6, y + legOffset, 5, 12); // L
+  ctx.fillRect(x + 1, y - legOffset, 5, 12); // R
 
-  // 2. BODY (Blocky)
+  // BODY
   ctx.fillStyle = s.shirt;
   ctx.fillRect(x - 7, y - 12, 14, 12);
   
-  // 3. HEAD (Square)
+  // HEAD
   ctx.fillStyle = s.skin;
   ctx.fillRect(x - 5, y - 20, 10, 8);
 
-  // 4. HAT / HAIR
+  // HAT/HAIR
   if(s.name === "WORKER"){
-    ctx.fillStyle = s.hat; // Hard hat
+    ctx.fillStyle = s.hat;
     ctx.fillRect(x - 6, y - 23, 12, 4);
   } else if (s.name === "PUNK") {
-    ctx.fillStyle = s.hat; // Mohawk
+    ctx.fillStyle = s.hat;
     ctx.fillRect(x - 2, y - 26, 4, 6);
   } else if (s.name === "SUIT") {
-    ctx.fillStyle = s.hat; // Fedora
-    ctx.fillRect(x - 7, y - 22, 14, 3); // Brim
-    ctx.fillRect(x - 5, y - 25, 10, 4); // Top
+    ctx.fillStyle = s.hat;
+    ctx.fillRect(x - 7, y - 22, 14, 3);
+    ctx.fillRect(x - 5, y - 25, 10, 4);
   }
 
-  // 5. ARMS
+  // ARMS (Flailing if lifted)
   ctx.fillStyle = s.skin;
   if(h.lift > 0) {
-    // Arms up if panicked!
-    ctx.fillRect(x - 11, y - 22, 4, 10);
-    ctx.fillRect(x + 7, y - 22, 4, 10);
+    ctx.fillRect(x - 12, y - 24 + Math.sin(h.legAnim*2)*4, 4, 10);
+    ctx.fillRect(x + 8, y - 24 + Math.cos(h.legAnim*2)*4, 4, 10);
   } else {
-    // Arms down
     ctx.fillRect(x - 11, y - 12, 4, 10);
     ctx.fillRect(x + 7, y - 12, 4, 10);
   }
-
   ctx.restore();
 }
 
+// --- UFO ---
 function drawUFO(){
-  // Smooth movement
-  ufoX += (targetX - ufoX) * 0.15;
-  const y = 100;
-  
+  // Physics Tilt
+  let diff = targetX - ufoX;
+  ufoX += diff * 0.1;
+  ufoTilt = diff * 0.05; // Tilt based on speed
+  ufoTilt = Math.max(-0.4, Math.min(0.4, ufoTilt)); // Clamp tilt
+
+  const y = 110;
+
+  ctx.save();
+  ctx.translate(ufoX, y);
+  ctx.rotate(ufoTilt);
+
   // 1. DOME (Back)
-  ctx.fillStyle = "rgba(0, 200, 255, 0.3)";
+  ctx.fillStyle = "rgba(0, 200, 255, 0.4)";
   ctx.beginPath();
-  ctx.arc(ufoX, y-10, 35, Math.PI, 0);
+  ctx.arc(0, -10, 35, Math.PI, 0);
   ctx.fill();
 
-  // 2. ALIEN (Green head inside)
-  ctx.fillStyle = "#33cc33"; // Alien Green
+  // 2. ALIEN
+  ctx.fillStyle = "#33cc33";
   ctx.beginPath();
-  ctx.ellipse(ufoX, y-15, 12, 16, 0, 0, Math.PI*2); // Head
+  ctx.ellipse(0, -15, 12, 16, 0, 0, Math.PI*2);
   ctx.fill();
   
-  // Alien Eyes
-  ctx.fillStyle = "black";
-  ctx.beginPath();
-  ctx.ellipse(ufoX - 5, y-15, 4, 6, -0.2, 0, Math.PI*2);
-  ctx.ellipse(ufoX + 5, y-15, 4, 6, 0.2, 0, Math.PI*2);
-  ctx.fill();
-
-  // 3. DOME (Glass reflection front)
-  ctx.strokeStyle = "rgba(255,255,255,0.6)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(ufoX+10, y-25, 8, 1.5*Math.PI, 0);
-  ctx.stroke();
-
-  // 4. SAUCER BODY (Gray)
-  ctx.fillStyle = "#dddddd";
-  ctx.beginPath();
-  ctx.ellipse(ufoX, y, 60, 18, 0, 0, Math.PI*2);
-  ctx.fill();
-  
-  // 5. RIM (Orange)
-  ctx.fillStyle = "#ff8800";
-  ctx.beginPath();
-  ctx.ellipse(ufoX, y+5, 60, 5, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  // 6. CHANGING LIGHTS
-  const time = Date.now() / 200;
-  for(let i=0; i<5; i++){
-    // Cycle colors
-    ctx.fillStyle = `hsl(${(time * 100 + i*60) % 360}, 100%, 50%)`;
-    let lx = ufoX - 40 + i * 20;
-    let ly = y + 8; // On the rim
+  // Alien Eyes (Blinking)
+  if(frame % 150 < 140) { // Blink every few seconds
+    ctx.fillStyle = "black";
     ctx.beginPath();
-    ctx.arc(lx, ly, 4, 0, Math.PI*2);
+    ctx.ellipse(-5, -15, 4, 6, -0.2, 0, Math.PI*2);
+    ctx.ellipse(5, -15, 4, 6, 0.2, 0, Math.PI*2);
     ctx.fill();
   }
+
+  // 3. DOME (Front Reflection)
+  ctx.strokeStyle = "rgba(255,255,255,0.7)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(10, -25, 8, 1.5*Math.PI, 0);
+  ctx.stroke();
+
+  // 4. SAUCER
+  ctx.fillStyle = "#ccc";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 60, 18, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = "#ff9900"; // Orange Rim
+  ctx.beginPath();
+  ctx.ellipse(0, 5, 60, 5, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // 5. LIGHTS
+  const time = Date.now() / 150;
+  for(let i=0; i<5; i++){
+    ctx.fillStyle = `hsl(${(time * 100 + i*60) % 360}, 100%, 60%)`;
+    let lx = -40 + i * 20;
+    ctx.beginPath();
+    ctx.arc(lx, 8, 4, 0, Math.PI*2);
+    ctx.fill();
+  }
+  
+  ctx.restore();
 }
 
 function drawBeam(){
   if(!beamOn || energy <= 0) return;
   energy -= 0.4;
   
-  // Cool Gradient Beam
-  const grd = ctx.createLinearGradient(0, 110, 0, canvas.height);
-  grd.addColorStop(0, "rgba(0, 255, 200, 0.5)");
-  grd.addColorStop(1, "rgba(0, 255, 200, 0)");
+  ctx.save();
+  ctx.translate(ufoX, 120);
+  ctx.rotate(ufoTilt * 0.5); // Beam tilts slightly too
+
+  const grd = ctx.createLinearGradient(0, 0, 0, canvas.height-120);
+  grd.addColorStop(0, "rgba(0, 255, 220, 0.6)");
+  grd.addColorStop(1, "rgba(0, 255, 220, 0)");
   
   ctx.fillStyle = grd;
   ctx.beginPath();
-  ctx.moveTo(ufoX - 20, 120); // Top left
-  ctx.lineTo(ufoX + 20, 120); // Top right
-  ctx.lineTo(ufoX + 60, canvas.height); // Bottom right
-  ctx.lineTo(ufoX - 60, canvas.height); // Bottom left
+  ctx.moveTo(-20, 0);
+  ctx.lineTo(20, 0);
+  ctx.lineTo(70, canvas.height);
+  ctx.lineTo(-70, canvas.height);
   ctx.fill();
+  ctx.restore();
 }
 
-function updateGame(){
-  // Clear Screen
-  ctx.fillStyle = "#111"; // Dark background
+// --- MAIN LOOP ---
+function loop(){
+  frame++;
+  // Background
+  const bgGrad = ctx.createLinearGradient(0,0,0,canvas.height);
+  bgGrad.addColorStop(0, "#050510");
+  bgGrad.addColorStop(1, "#202040");
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0,0,canvas.width, canvas.height);
 
+  drawStars();
+
   // City Floor
-  ctx.fillStyle = "#222";
+  ctx.fillStyle = "#111";
   ctx.fillRect(0, canvas.height-40, canvas.width, 40);
+  ctx.fillStyle = "#222"; // Road
+  ctx.fillRect(0, canvas.height-35, canvas.width, 2);
 
   drawBeam();
+  drawParticles();
 
-  // Update Humans
+  // Humans Logic
   humans.forEach((h, index) => {
-    // Check if in beam
     let dist = Math.abs(h.x - ufoX);
     if(beamOn && dist < 50 && energy > 0){
-      h.lift += 4;
-      h.wobble += 0.5;
-      // Caught!
-      if(h.lift > canvas.height - 130) {
+      h.lift += 6; // Lift speed
+      if(h.lift > canvas.height - 150) {
+        // ABDUCTED!
+        spawnParticles(ufoX, 130, h.type.shirt);
         humans.splice(index, 1);
         score++;
-        energy = Math.min(100, energy + 15);
+        if(score > highScore) {
+           highScore = score;
+           localStorage.setItem('alienHighScore', highScore);
+        }
+        energy = Math.min(100, energy + 12);
       }
     } else {
-      // Gravity
-      if(h.lift > 0) h.lift -= 5;
+      if(h.lift > 0) h.lift -= 8; // Drop fast
       else {
         h.x += h.vx;
         if(h.x < 0 || h.x > canvas.width) h.vx *= -1;
@@ -238,23 +325,24 @@ function updateGame(){
 
   // UI
   ctx.fillStyle = "white";
-  ctx.font = "20px Arial";
-  ctx.fillText("Score: " + score, 20, 40);
+  ctx.font = "bold 20px Courier New";
+  ctx.fillText("SCORE: " + score, 20, 40);
+  ctx.font = "14px Courier New";
+  ctx.fillStyle = "#aaa";
+  ctx.fillText("BEST: " + highScore, 20, 60);
   
   // Energy Bar
-  ctx.fillStyle = "gray";
-  ctx.fillRect(20, 50, 100, 10);
-  ctx.fillStyle = energy > 20 ? "#00ff00" : "red";
-  ctx.fillRect(20, 50, energy, 10);
+  ctx.fillStyle = "#444";
+  ctx.fillRect(20, 75, 100, 8);
+  ctx.fillStyle = energy > 20 ? "#00ffcc" : "#ff0055";
+  ctx.fillRect(20, 75, energy, 8);
 
-  if(!beamOn) energy = Math.min(100, energy + 0.2);
+  // Recharge
+  if(!beamOn) energy = Math.min(100, energy + 0.25);
 
-  requestAnimationFrame(updateGame);
+  requestAnimationFrame(loop);
 }
-
-// START
-updateGame();
-
+loop();
 </script>
 </body>
 </html>
